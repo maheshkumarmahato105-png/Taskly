@@ -35,6 +35,10 @@ export default function SettingsPage() {
 
   const tasks = typeof window !== "undefined" ? loadStoredTasks() : [];
   const summary = calculateSummary(tasks);
+  const taskCounts: Record<string, number> = {};
+  tasks.forEach(t => {
+    taskCounts[t.category] = (taskCounts[t.category] || 0) + 1;
+  });
 
   function handleSave() {
     saveStoredSettings(settings);
@@ -56,6 +60,7 @@ export default function SettingsPage() {
         }}
         completionRate={summary.completionRate}
         brandName="EasyMyLearning"
+        categoryCounts={taskCounts}
       />
 
       <div className="main-wrapper">

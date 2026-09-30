@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   Layers,
   FolderTree,
+  ArrowUpDown,
 } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import type { Lookup } from "@/types/task";
@@ -49,6 +50,18 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [catSort, setCatSort] = useState<"default" | "tasks" | "az">("default");
+
+  const sortedCategories = useMemo(() => {
+    const list = [...categories];
+    if (catSort === "az") {
+      return list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    if (catSort === "tasks") {
+      return list.sort((a, b) => (categoryCounts?.[b.name] ?? 0) - (categoryCounts?.[a.name] ?? 0));
+    }
+    return list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }, [categories, catSort, categoryCounts]);
 
   const isNavActive = (path: string) => pathname === path;
 
@@ -158,12 +171,31 @@ export function Sidebar({
         <div className="nav-group">
           <div className="nav-label">
             <span>Categories</span>
-            <Link href="/categories" style={{ color: "#FFAA00", fontSize: "10px", fontWeight: 700 }}>
-              Manage →
-            </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={() => setCatSort(prev => prev === "default" ? "tasks" : prev === "tasks" ? "az" : "default")}
+                title={`Arrange categories (Current: ${catSort === "default" ? "Custom Order" : catSort === "tasks" ? "Most Tasks First" : "A-Z Alphabetical"}). Click to switch.`}
+                style={{
+                  color: catSort !== "default" ? "#FFAA00" : "#8FA0B6",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <ArrowUpDown size={11} />
+                <span>{catSort === "default" ? "Order" : catSort === "tasks" ? "Active" : "A-Z"}</span>
+              </button>
+              <Link href="/categories" style={{ color: "#FFAA00", fontSize: "10px", fontWeight: 700 }}>
+                Manage →
+              </Link>
+            </div>
           </div>
           <nav className="nav-list">
-            {categories.slice(0, 10).map(cat => {
+            {sortedCategories.slice(0, 10).map(cat => {
               const isSelected = selectedCategory?.toLowerCase() === cat.name.toLowerCase();
               return (
                 <button

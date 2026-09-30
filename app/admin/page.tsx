@@ -121,8 +121,18 @@ export default function AdminPage() {
     toast.success("Role Updated", `${u?.name || "User"} permission updated to ${role}`);
   }
 
+  function handleReorderCategories(updated: Lookup[]) {
+    setCategories(updated);
+    saveStoredCategories(updated);
+    toast.success("Categories Arranged", "Category order updated successfully");
+  }
+
   const tasks = typeof window !== "undefined" ? loadStoredTasks() : [];
   const summary = calculateSummary(tasks);
+  const taskCounts: Record<string, number> = {};
+  tasks.forEach(t => {
+    taskCounts[t.category] = (taskCounts[t.category] || 0) + 1;
+  });
 
   return (
     <div className="app">
@@ -137,6 +147,7 @@ export default function AdminPage() {
         }}
         completionRate={summary.completionRate}
         brandName={settings.appName}
+        categoryCounts={taskCounts}
       />
 
       <div className="main-wrapper">
@@ -216,6 +227,7 @@ export default function AdminPage() {
                 }}
                 onAddCategory={handleAddCategory}
                 onDeleteCategory={handleDeleteCategory}
+                onReorderCategories={handleReorderCategories}
               />
             )}
 

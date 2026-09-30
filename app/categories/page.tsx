@@ -40,6 +40,12 @@ export default function CategoriesPage() {
     toast.info("Category Deleted", found ? `'${found.name}' removed` : "Category removed");
   }
 
+  function handleReorderCategories(updated: Lookup[]) {
+    setCategories(updated);
+    saveStoredCategories(updated);
+    toast.success("Categories Arranged", "Category order updated successfully");
+  }
+
   const taskCounts: Record<string, number> = {};
   tasks.forEach(t => {
     taskCounts[t.category] = (taskCounts[t.category] || 0) + 1;
@@ -58,6 +64,7 @@ export default function CategoriesPage() {
         }}
         completionRate={summary.completionRate}
         brandName="EasyMyLearning"
+        categoryCounts={taskCounts}
       />
 
       <div className="main-wrapper">
@@ -82,6 +89,7 @@ export default function CategoriesPage() {
             taskCountsByCategory={taskCounts}
             onAddCategory={handleAddCategory}
             onDeleteCategory={handleDeleteCategory}
+            onReorderCategories={handleReorderCategories}
           />
         </main>
       </div>
