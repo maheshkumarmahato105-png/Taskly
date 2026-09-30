@@ -108,8 +108,8 @@ export interface SystemSettings {
   theme: "light" | "dark" | "system";
   defaultView: "list" | "kanban";
   auditEnabled: boolean;
-  companyName: string;
-  supportEmail: string;
+  companyName?: string;
+  supportEmail?: string;
 }
 
 export interface InAppNotification {

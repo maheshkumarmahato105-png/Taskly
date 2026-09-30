@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { BrandLogo, BrandMark } from "@/components/ui/BrandLogo";
 import type { SystemSettings as SystemSettingsType } from "@/types/task";
@@ -10,6 +12,8 @@ interface SystemSettingsProps {
 export function SystemSettings({ settings, onSave }: SystemSettingsProps) {
   const [appName, setAppName] = useState(settings.appName || "EasyMyLearning");
   const [brandColor, setBrandColor] = useState(settings.brandColor || "#FFAA00");
+  const [companyName, setCompanyName] = useState(settings.companyName || "EasyMyLearning Inc.");
+  const [supportEmail, setSupportEmail] = useState(settings.supportEmail || "support@easymylearning.com");
   const [defaultView, setDefaultView] = useState<"list" | "kanban">(settings.defaultView || "list");
   const [auditEnabled, setAuditEnabled] = useState(settings.auditEnabled ?? true);
 
@@ -20,6 +24,8 @@ export function SystemSettings({ settings, onSave }: SystemSettingsProps) {
       theme: settings.theme || "light",
       defaultView,
       auditEnabled,
+      companyName,
+      supportEmail,
     });
   }
 
@@ -33,7 +39,18 @@ export function SystemSettings({ settings, onSave }: SystemSettingsProps) {
             <strong>Brand Logo & Mark Preview</strong>
             <p>Official graduation cap + task completion vector mark for desktop & mobile.</p>
           </div>
-          <div style={{ background: "#0F172A", padding: "14px 18px", borderRadius: "12px", border: "1px solid #1E293B", display: "flex", flexDirection: "column", gap: "10px", minWidth: "260px" }}>
+          <div
+            style={{
+              background: "#0F172A",
+              padding: "14px 18px",
+              borderRadius: "12px",
+              border: "1px solid #1E293B",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              minWidth: "260px",
+            }}
+          >
             <BrandLogo brandName={appName} subTitle="Task Manager" badge="ENTERPRISE" />
             <div style={{ display: "flex", alignItems: "center", gap: "12px", borderTop: "1px solid #1E293B", paddingTop: "8px" }}>
               <span style={{ fontSize: "10px", color: "#64748B" }}>Icon Mark:</span>
@@ -73,6 +90,34 @@ export function SystemSettings({ settings, onSave }: SystemSettingsProps) {
               {brandColor}
             </span>
           </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <strong>Company / Organization Name</strong>
+            <p>Parent entity name for legal, report footers, and billing.</p>
+          </div>
+          <input
+            type="text"
+            className="form-input"
+            style={{ width: "240px" }}
+            value={companyName}
+            onChange={e => setCompanyName(e.target.value)}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <strong>Support Contact Email</strong>
+            <p>Email address for system notifications and help requests.</p>
+          </div>
+          <input
+            type="email"
+            className="form-input"
+            style={{ width: "240px" }}
+            value={supportEmail}
+            onChange={e => setSupportEmail(e.target.value)}
+          />
         </div>
       </div>
 
