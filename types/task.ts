@@ -14,6 +14,15 @@ export interface TaskComment {
   text: string;
 }
 
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  size: string;
+  type: string;
+  uploadedAt: string;
+  url?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -25,6 +34,8 @@ export interface Task {
   assignee?: string;
   checklists?: ChecklistItem[];
   comments?: TaskComment[];
+  attachments?: TaskAttachment[];
+  customFields?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +56,7 @@ export interface Lookup {
   description?: string;
   color?: string;
   sortOrder?: number;
+  isDefault?: boolean;
 }
 
 export interface UpcomingTask {
@@ -59,8 +71,27 @@ export interface UserAccount {
   id: string;
   name: string;
   email: string;
-  role: string;
-  status: string;
+  role: "Lead Admin" | "Full-Stack Dev" | "Product Designer" | "QA Engineer" | "Project Manager" | "Viewer";
+  status: "Active" | "Inactive" | "Invited";
+  avatar?: string;
+}
+
+export interface CustomFieldDefinition {
+  id: string;
+  name: string;
+  key: string;
+  type: "text" | "date" | "number" | "select";
+  options?: string[];
+  placeholder?: string;
+  required?: boolean;
+}
+
+export interface DashboardWidgetConfig {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  position: number;
 }
 
 export interface AuditLogItem {
@@ -74,7 +105,19 @@ export interface AuditLogItem {
 export interface SystemSettings {
   appName: string;
   brandColor: string;
-  theme: string;
+  theme: "light" | "dark" | "system";
   defaultView: "list" | "kanban";
   auditEnabled: boolean;
+  companyName: string;
+  supportEmail: string;
+}
+
+export interface InAppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: "assignment" | "due_date" | "overdue" | "comment" | "system";
+  timestamp: string;
+  read: boolean;
+  taskId?: string;
 }

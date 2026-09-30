@@ -3,7 +3,17 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckCircle2, Clock3, CalendarClock, ListChecks, ShieldAlert, Settings, LayoutGrid } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  CalendarClock,
+  ListChecks,
+  ShieldAlert,
+  Settings,
+  LayoutGrid,
+  Layers,
+  FileCode2,
+} from "lucide-react";
 import type { Lookup } from "@/types/task";
 
 interface SidebarProps {
@@ -18,9 +28,17 @@ interface SidebarProps {
   completionRate: number;
   brandName?: string;
   onAddCategory?: () => void;
+  onOpenArchitectureModal?: () => void;
 }
 
-export function Sidebar({ categories, counts, completionRate, brandName = "Taskly", onAddCategory }: SidebarProps) {
+export function Sidebar({
+  categories,
+  counts,
+  completionRate,
+  brandName = "EasyMyLearning",
+  onAddCategory,
+  onOpenArchitectureModal,
+}: SidebarProps) {
   const pathname = usePathname();
 
   const isNavActive = (path: string) => pathname === path;
@@ -28,16 +46,18 @@ export function Sidebar({ categories, counts, completionRate, brandName = "Taskl
   return (
     <aside className="sidebar">
       <Link href="/" className="brand">
-        <div className="brand-mark">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+        <div className="brand-mark" style={{ background: "linear-gradient(135deg, #FFAA00 0%, #E68A00 100%)", color: "#1E293B" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M4 12l5 5L20 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <div className="brand-info">
-          <span className="brand-name">{brandName}</span>
-          <span className="brand-sub">Task Manager</span>
+          <span className="brand-name" style={{ color: "#F8FAFC", fontWeight: 900 }}>{brandName}</span>
+          <span className="brand-sub" style={{ color: "#FFAA00", fontWeight: 700 }}>Task Manager</span>
         </div>
-        <span className="brand-badge">PRO</span>
+        <span className="brand-badge" style={{ background: "rgba(255, 170, 0, 0.15)", color: "#FFD36B", borderColor: "rgba(255, 170, 0, 0.3)" }}>
+          ENTERPRISE
+        </span>
       </Link>
 
       {/* Workspace */}
@@ -55,9 +75,9 @@ export function Sidebar({ categories, counts, completionRate, brandName = "Taskl
             <span className="nav-title">All Tasks</span>
           </Link>
 
-          <Link href="/tasks?filter=today" className={`nav-item ${pathname === "/tasks" ? "" : ""}`}>
+          <Link href="/tasks?filter=today" className="nav-item">
             <span className="nav-icon"><Clock3 size={17} /></span>
-            <span className="nav-title">Today</span>
+            <span className="nav-title">Today's Focus</span>
             <span className="nav-badge">{counts.today}</span>
           </Link>
 
@@ -76,7 +96,7 @@ export function Sidebar({ categories, counts, completionRate, brandName = "Taskl
           <Link href="/tasks?filter=overdue" className="nav-item">
             <span className="nav-icon" style={{ color: "var(--red)" }}><ShieldAlert size={17} /></span>
             <span className="nav-title">Overdue</span>
-            <span className="nav-badge" style={{ color: "var(--red)", background: "rgba(239,68,68,0.15)" }}>
+            <span className="nav-badge" style={{ color: "var(--red)", background: "rgba(239,68,68,0.18)" }}>
               {counts.overdue}
             </span>
           </Link>
@@ -87,9 +107,9 @@ export function Sidebar({ categories, counts, completionRate, brandName = "Taskl
       <div className="nav-group">
         <div className="nav-label">
           <span>Categories</span>
-          {onAddCategory && (
-            <span className="nav-label-action" onClick={onAddCategory} title="Add Category">+ Add</span>
-          )}
+          <Link href="/categories" style={{ color: "#FFAA00", fontSize: "10px", fontWeight: 700 }}>
+            Manage →
+          </Link>
         </div>
         <nav className="nav-list">
           {categories.slice(0, 7).map(cat => (
@@ -106,13 +126,24 @@ export function Sidebar({ categories, counts, completionRate, brandName = "Taskl
         <div className="nav-label">Administration</div>
         <nav className="nav-list">
           <Link href="/admin" className={`nav-item ${isNavActive("/admin") ? "active" : ""}`}>
-            <span className="nav-icon"><Settings size={17} /></span>
+            <span className="nav-icon"><Layers size={17} /></span>
             <span className="nav-title">Admin Console</span>
           </Link>
           <Link href="/settings" className={`nav-item ${isNavActive("/settings") ? "active" : ""}`}>
             <span className="nav-icon"><Settings size={17} /></span>
             <span className="nav-title">Preferences</span>
           </Link>
+          {onOpenArchitectureModal && (
+            <button
+              className="nav-item"
+              onClick={onOpenArchitectureModal}
+              style={{ width: "100%", textAlign: "left", background: "none", border: 0, cursor: "pointer", color: "#FFAA00" }}
+            >
+              <span className="nav-icon"><FileCode2 size={17} /></span>
+              <span className="nav-title">Architecture Plan</span>
+              <span className="nav-badge" style={{ background: "rgba(255,170,0,0.2)", color: "#FFAA00" }}>PDF</span>
+            </button>
+          )}
         </nav>
       </div>
 
@@ -122,9 +153,9 @@ export function Sidebar({ categories, counts, completionRate, brandName = "Taskl
           <strong>Daily Productivity</strong>
           <span>{completionRate}%</span>
         </div>
-        <p>Complete priority tasks before the end of the day.</p>
+        <p>Complete priority tasks to hit weekly milestones.</p>
         <div className="focus-bar-bg">
-          <div className="focus-bar-fill" style={{ width: `${completionRate}%` }} />
+          <div className="focus-bar-fill" style={{ width: `${completionRate}%`, background: "linear-gradient(90deg, #FFAA00, #10B981)" }} />
         </div>
       </div>
     </aside>

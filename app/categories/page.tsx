@@ -4,59 +4,90 @@ import React, { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { CategoryManager } from "@/components/admin/CategoryManager";
-import { api } from "@/lib/api";
+import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
+import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
+import {
+  loadStoredCategories,
+  saveStoredCategories,
+  loadStoredTasks,
+  calculateSummary,
+} from "@/lib/store";
 import type { Lookup } from "@/types/task";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Lookup[]>([]);
+  const [archModalOpen, setArchModalOpen] = useState(false);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const res = await api.categories();
-        setCategories(res.items);
-      } catch {
-        setCategories([
-          { id: "cat-work", name: "Work", color: "#6366F1" },
-          { id: "cat-study", name: "Study", color: "#10B981" },
-          { id: "cat-marketing", name: "Marketing", color: "#EC4899" },
-          { id: "cat-operations", name: "Operations", color: "#0EA5E9" },
-          { id: "cat-admissions", name: "Admissions", color: "#8B5CF6" },
-          { id: "cat-personal", name: "Personal", color: "#F59E0B" },
-        ]);
-      }
-    }
-    void loadData();
+    setCategories(loadStoredCategories());
   }, []);
+
+  const tasks = typeof window !== "undefined" ? loadStoredTasks() : [];
+  const summary = calculateSummary(tasks);
+
+  function handleAddCategory(cat: { name: string; color: string }) {
+    const updated = [...categories, { id: "cat-" + Date.now(), ...cat }];
+    setCategories(updated);
+    saveStoredCategories(updated);
+  }
+
+  function handleDeleteCategory(id: string) {
+    const updated = categories.filter(c => c.id !== id);
+    setCategories(updated);
+    saveStoredCategories(updated);
+  }
+
+  const taskCounts: Record<string, number> = {};
+  tasks.forEach(t => {
+    taskCounts[t.category] = (taskCounts[t.category] || 0) + 1;
+  });
 
   return (
     <div className="app">
       <Sidebar
         categories={categories}
-        counts={{ total: 10, today: 3, upcoming: 4, completed: 3, overdue: 1 }}
-        completionRate={30}
+        counts={{
+          total: tasks.length,
+          today: tasks.filter(t => t.dueDate === new Date().toISOString().slice(0, 10)).length,
+          upcoming: tasks.filter(t => t.dueDate && t.dueDate > new Date().toISOString().slice(0, 10)).length,
+          completed: summary.completed,
+          overdue: summary.overdue,
+        }}
+        completionRate={summary.completionRate}
+        brandName="EasyMyLearning"
+        onOpenArchitectureModal={() => setArchModalOpen(true)}
       />
 
       <div className="main-wrapper">
-        <Topbar breadcrumbTitle="Task Categories" />
+        <Topbar
+          breadcrumbTitle="Task Categories"
+          onOpenArchitecture={() => setArchModalOpen(true)}
+          onHelpClick={() => setShortcutsModalOpen(true)}
+        />
 
         <main className="content-area">
           <div className="hero">
             <div>
-              <div className="hero-tag">ORGANIZATION</div>
+              <div className="hero-tag" style={{ color: "#FFAA00" }}>ORGANIZATION &amp; TAXONOMY (PDF PAGE 5 &amp; 6)</div>
               <h1 className="hero-title">Task Categories</h1>
-              <p className="hero-desc">Manage categories and tags to organize tasks across departments.</p>
+              <p className="hero-desc">
+                Configurable task categories: Work, Study, Admissions, Finance, Marketing, Operations, Personal.
+              </p>
             </div>
           </div>
 
           <CategoryManager
             categories={categories}
-            taskCountsByCategory={{ Work: 4, Marketing: 2, Operations: 2, Admissions: 1, Personal: 1 }}
-            onAddCategory={cat => setCategories(prev => [...prev, { id: "cat-" + Date.now(), ...cat }])}
-            onDeleteCategory={id => setCategories(prev => prev.filter(c => c.id !== id))}
+            taskCountsByCategory={taskCounts}
+            onAddCategory={handleAddCategory}
+            onDeleteCategory={handleDeleteCategory}
           />
         </main>
       </div>
+
+      <ArchitectureModal isOpen={archModalOpen} onClose={() => setArchModalOpen(false)} />
+      <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
     </div>
   );
 }

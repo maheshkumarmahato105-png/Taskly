@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { SummaryGrid } from "@/components/dashboard/SummaryGrid";
@@ -11,32 +11,20 @@ import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import { BulkActions } from "@/components/tasks/BulkActions";
 import { FilterBar } from "@/components/tasks/FilterBar";
+import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
+import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { api } from "@/lib/api";
 import {
   loadStoredTasks,
   saveStoredTasks,
   loadStoredCategories,
   loadStoredStatuses,
+  loadStoredSettings,
   calculateSummary,
+  addStoredAuditLog,
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
-import { Plus } from "lucide-react";
-
-const initialCategories: Lookup[] = [
-  { id: "cat-work", name: "Work", color: "#6366F1" },
-  { id: "cat-study", name: "Study", color: "#10B981" },
-  { id: "cat-marketing", name: "Marketing", color: "#EC4899" },
-  { id: "cat-operations", name: "Operations", color: "#0EA5E9" },
-  { id: "cat-admissions", name: "Admissions", color: "#8B5CF6" },
-  { id: "cat-finance", name: "Finance", color: "#14B8A6" },
-  { id: "cat-personal", name: "Personal", color: "#F59E0B" },
-];
-
-const initialStatuses: Lookup[] = [
-  { id: "st-not-started", code: "NOT_STARTED", name: "Not Started", color: "#64748B" },
-  { id: "st-in-progress", code: "IN_PROGRESS", name: "In Progress", color: "#3B82F6" },
-  { id: "st-completed", code: "COMPLETED", name: "Completed", color: "#10B981" },
-];
+import { Plus, FileText, Command } from "lucide-react";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -47,8 +35,8 @@ function getGreeting(): string {
 
 export default function HomePage() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [statuses, setStatuses] = useState<Lookup[]>(initialStatuses);
-  const [categories, setCategories] = useState<Lookup[]>(initialCategories);
+  const [statuses, setStatuses] = useState<Lookup[]>([]);
+  const [categories, setCategories] = useState<Lookup[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingTask[]>([]);
 
   const [currentFilter, setCurrentFilter] = useState("all");
@@ -60,6 +48,10 @@ export default function HomePage() {
   const [activeDrawerTask, setActiveDrawerTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [archModalOpen, setArchModalOpen] = useState(false);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
+
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Load data — API first, localStorage fallback
   useEffect(() => {
@@ -76,7 +68,6 @@ export default function HomePage() {
         setStatuses(statusRes.items);
         setCategories(catRes.items);
       } catch {
-        // Backend offline — use localStorage
         const storedTasks = loadStoredTasks();
         const storedCats = loadStoredCategories();
         const storedStatuses = loadStoredStatuses();
@@ -95,14 +86,50 @@ export default function HomePage() {
     void loadData();
   }, []);
 
-  // Persist tasks to localStorage whenever they change
+  // Save changes to storage
   useEffect(() => {
     if (tasks.length > 0) {
       saveStoredTasks(tasks);
     }
   }, [tasks]);
 
-  // Derived summary — always in sync with real tasks list
+  // Global Keyboard Shortcuts (PDF Page 7)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") {
+        if (e.key === "Escape") {
+          (document.activeElement as HTMLElement)?.blur();
+        }
+        return;
+      }
+
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        setEditingTask(null);
+        setModalOpen(true);
+      } else if (e.key === "/") {
+        e.preventDefault();
+        const input = document.querySelector(".search-input") as HTMLInputElement;
+        if (input) input.focus();
+      } else if (e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        setViewMode(prev => prev === "list" ? "kanban" : "list");
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setShortcutsModalOpen(true);
+      } else if (e.key === "Escape") {
+        setActiveDrawerTask(null);
+        setModalOpen(false);
+        setArchModalOpen(false);
+        setShortcutsModalOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const summary = useMemo(() => calculateSummary(tasks), [tasks]);
 
   const counts = useMemo(() => {
@@ -122,14 +149,15 @@ export default function HomePage() {
     const today = new Date().toISOString().slice(0, 10);
     const list = tasks.filter(t => {
       if (searchQuery) {
-        const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority}`.toLowerCase();
+        const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority} ${t.customFields?.reference_number || ""}`.toLowerCase();
         if (!str.includes(searchQuery.toLowerCase())) return false;
       }
       if (currentFilter === "today") return t.dueDate === today;
-      if (currentFilter === "upcoming") return t.dueDate && t.dueDate > today && t.status !== "Completed";
+      if (currentFilter === "upcoming") return Boolean(t.dueDate && t.dueDate > today && t.status !== "Completed");
       if (currentFilter === "completed") return t.status === "Completed";
       if (currentFilter === "not-started") return t.status === "Not Started";
       if (currentFilter === "in-progress") return t.status === "In Progress";
+      if (currentFilter === "blocked") return t.status === "Blocked" || t.status === "On Hold";
       if (currentFilter === "high") return t.priority === "High" || t.priority === "Urgent";
       if (currentFilter === "overdue") return Boolean(t.dueDate && t.dueDate < today && t.status !== "Completed");
       if (currentFilter.startsWith("category:")) return t.category === currentFilter.slice(9);
@@ -142,7 +170,7 @@ export default function HomePage() {
         return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
       }
       if (sortBy === "status") {
-        const rank: Record<string, number> = { "In Progress": 1, "Not Started": 2, "Completed": 3 };
+        const rank: Record<string, number> = { "In Progress": 1, Blocked: 2, "Not Started": 3, Completed: 4 };
         return (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
       }
       if (sortBy === "due") return (a.dueDate || "9999").localeCompare(b.dueDate || "9999");
@@ -172,17 +200,20 @@ export default function HomePage() {
 
   function handleBulkStatus(status: TaskStatus) {
     setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+    addStoredAuditLog("Bulk Status Update", `Updated ${selectedIds.size} tasks to ${status}`);
     setSelectedIds(new Set());
   }
 
   function handleBulkPriority(priority: TaskPriority) {
     setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, priority, updatedAt: new Date().toISOString() } : t));
+    addStoredAuditLog("Bulk Priority Update", `Updated ${selectedIds.size} tasks to ${priority}`);
     setSelectedIds(new Set());
   }
 
   function handleBulkDelete() {
     if (!confirm(`Delete ${selectedIds.size} selected task${selectedIds.size > 1 ? "s" : ""}?`)) return;
     setTasks(prev => prev.filter(t => !selectedIds.has(t.id)));
+    addStoredAuditLog("Bulk Task Deletion", `Removed ${selectedIds.size} tasks`);
     setSelectedIds(new Set());
   }
 
@@ -194,6 +225,7 @@ export default function HomePage() {
     category: string;
     dueDate: string;
     assignee: string;
+    customFields?: Record<string, string>;
   }) {
     if (editingTask) {
       setTasks(prev =>
@@ -202,14 +234,23 @@ export default function HomePage() {
           : t
         )
       );
+      addStoredAuditLog("Task Updated", `Updated '${payload.title}' (${payload.status})`);
     } else {
       const newTask: Task = {
         id: String(Date.now()),
         ...payload,
+        checklists: [
+          { id: "c1", text: "Collect data", done: true },
+          { id: "c2", text: "Verify figures", done: false },
+          { id: "c3", text: "Finalize charts", done: false },
+        ],
+        comments: [],
+        attachments: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       setTasks(prev => [newTask, ...prev]);
+      addStoredAuditLog("Task Created", `Created '${payload.title}' in ${payload.category}`);
     }
     setModalOpen(false);
     setEditingTask(null);
@@ -217,28 +258,44 @@ export default function HomePage() {
 
   return (
     <div className="app">
-      <Sidebar categories={categories} counts={counts} completionRate={completionRate} />
+      <Sidebar
+        categories={categories}
+        counts={counts}
+        completionRate={completionRate}
+        brandName="EasyMyLearning"
+        onOpenArchitectureModal={() => setArchModalOpen(true)}
+      />
 
       <div className="main-wrapper">
-        <Topbar breadcrumbTitle="Tasks Dashboard" />
+        <Topbar
+          breadcrumbTitle="Task Manager Workspace"
+          onOpenArchitecture={() => setArchModalOpen(true)}
+          onHelpClick={() => setShortcutsModalOpen(true)}
+        />
 
         <main className="content-area">
           <div className="hero">
             <div>
-              <div className="hero-tag">TASK MANAGEMENT</div>
+              <div className="hero-tag" style={{ color: "#FFAA00" }}>EASYMYLEARNING TASK PLATFORM</div>
               <h1 className="hero-title">{getGreeting()}, Bishal 👋</h1>
-              <p className="hero-desc">Plan your work, track progress, and keep every deadline visible across the team.</p>
+              <p className="hero-desc">
+                Next.js + React frontend | Go backend | PostgreSQL | Docker | REST API
+              </p>
             </div>
             <div className="hero-controls">
               <button
                 className="btn btn-secondary"
-                onClick={() => {
-                  if (confirm("Clear all completed tasks?")) {
-                    setTasks(prev => prev.filter(t => t.status !== "Completed"));
-                  }
-                }}
+                onClick={() => setArchModalOpen(true)}
+                title="View Full Architecture Plan"
               >
-                Clear completed
+                <FileText size={15} style={{ color: "#FFAA00" }} /> Architecture Plan
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShortcutsModalOpen(true)}
+                title="View Keyboard Shortcuts (?)"
+              >
+                <Command size={15} /> Shortcuts
               </button>
               <button
                 className="btn btn-primary"
@@ -259,7 +316,7 @@ export default function HomePage() {
               <div className="task-panel-header">
                 <div className="task-panel-title">
                   <h2>Tasks Workspace</h2>
-                  <p>Move tasks through workflow stages, set priorities, and collaborate.</p>
+                  <p>Move tasks through workflow stages, set priorities, and collaborate in real-time.</p>
                 </div>
                 <div className="view-switchers">
                   <button
@@ -313,13 +370,16 @@ export default function HomePage() {
                   onDelete={task => {
                     if (confirm(`Delete "${task.title}"?`)) {
                       setTasks(prev => prev.filter(t => t.id !== task.id));
+                      addStoredAuditLog("Task Deleted", `Deleted '${task.title}'`);
                     }
                   }}
                   onChangeStatus={(task, status) => {
                     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+                    addStoredAuditLog("Status Changed", `'${task.title}' moved to ${status}`);
                   }}
                   onChangePriority={(task, priority) => {
                     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, priority, updatedAt: new Date().toISOString() } : t));
+                    addStoredAuditLog("Priority Changed", `'${task.title}' priority set to ${priority}`);
                   }}
                 />
               ) : (
@@ -327,12 +387,13 @@ export default function HomePage() {
                   tasks={filteredTasks}
                   categories={categories}
                   onOpenDetails={setActiveDrawerTask}
-                  onAddTask={_status => {
+                  onAddTask={status => {
                     setEditingTask(null);
                     setModalOpen(true);
                   }}
                   onMoveTask={(task, newStatus) => {
                     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t));
+                    addStoredAuditLog("Status Transition", `'${task.title}' moved to ${newStatus}`);
                   }}
                 />
               )}
@@ -378,6 +439,9 @@ export default function HomePage() {
         }}
         onSave={handleSaveTask}
       />
+
+      <ArchitectureModal isOpen={archModalOpen} onClose={() => setArchModalOpen(false)} />
+      <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
     </div>
   );
 }

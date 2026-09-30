@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
-import { X, Check } from "lucide-react";
+import type { Lookup, Task, TaskPriority, TaskStatus, TaskAttachment } from "@/types/task";
+import { X, Check, Paperclip, Plus, Trash2, Calendar, Hash, Clock } from "lucide-react";
 
 interface TaskDrawerProps {
   task: Task | null;
@@ -23,9 +23,11 @@ export function TaskDrawer({
   onUpdate,
   onDelete,
 }: TaskDrawerProps) {
-  const [activeTab, setActiveTab] = useState<"comments" | "activity">("comments");
+  const [activeTab, setActiveTab] = useState<"comments" | "activity" | "attachments">("comments");
   const [newChecklistText, setNewChecklistText] = useState("");
   const [newCommentText, setNewCommentText] = useState("");
+  const [newAttachmentName, setNewAttachmentName] = useState("");
+  const [showAttachInput, setShowAttachInput] = useState(false);
 
   if (!isOpen || !task) return null;
 
@@ -33,6 +35,13 @@ export function TaskDrawer({
     if (!task) return;
     const updated = { ...task, [field]: value, updatedAt: new Date().toISOString() };
     onUpdate(updated);
+  }
+
+  function updateCustomField(key: string, value: string) {
+    if (!task) return;
+    const currentCustom = task.customFields ? { ...task.customFields } : {};
+    currentCustom[key] = value;
+    updateField("customFields", currentCustom);
   }
 
   function handleAddChecklist() {
@@ -62,12 +71,27 @@ export function TaskDrawer({
     const comments = task.comments ? [...task.comments] : [];
     comments.push({
       id: "cm" + Date.now(),
-      author: "Bishal",
+      author: "Bishal (Lead)",
       date: "Just now",
       text: newCommentText.trim(),
     });
     updateField("comments", comments);
     setNewCommentText("");
+  }
+
+  function handleAddAttachment() {
+    if (!newAttachmentName.trim() || !task) return;
+    const attachments = task.attachments ? [...task.attachments] : [];
+    attachments.push({
+      id: "att-" + Date.now(),
+      name: newAttachmentName.trim(),
+      size: "1.2 MB",
+      type: "application/pdf",
+      uploadedAt: "Just now",
+    });
+    updateField("attachments", attachments);
+    setNewAttachmentName("");
+    setShowAttachInput(false);
   }
 
   const checklistTotal = task.checklists?.length || 0;
@@ -79,7 +103,9 @@ export function TaskDrawer({
       <div className="drawer-panel" onClick={e => e.stopPropagation()}>
         <div className="drawer-header">
           <div className="drawer-title-group">
-            <small id="drawerCategoryTag">{task.category || "TASK"}</small>
+            <small id="drawerCategoryTag" style={{ color: "#FFAA00", fontWeight: 800, letterSpacing: "1px" }}>
+              {task.category?.toUpperCase() || "OPERATIONS"}
+            </small>
             <h2 id="drawerTaskTitle">{task.title}</h2>
           </div>
           <button className="drawer-close-btn" onClick={onClose} title="Close drawer (Esc)">
@@ -119,9 +145,9 @@ export function TaskDrawer({
                 value={task.priority}
                 onChange={e => updateField("priority", e.target.value as TaskPriority)}
               >
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
                 <option value="Urgent">Urgent</option>
               </select>
             </div>
@@ -152,38 +178,68 @@ export function TaskDrawer({
 
           <div className="drawer-field-grid">
             <div className="drawer-field-item">
-              <label>Assignee</label>
+              <label>Task Assignee (PDF Page 7)</label>
               <select
                 className="drawer-field-select"
                 value={task.assignee || "Bishal"}
                 onChange={e => updateField("assignee", e.target.value)}
               >
-                <option value="Bishal">Bishal (Lead)</option>
-                <option value="Anita">Anita (Dev)</option>
-                <option value="Rahul">Rahul (Design)</option>
-                <option value="Priya">Priya (QA)</option>
+                <option value="Bishal">Bishal (Lead Admin)</option>
+                <option value="Anita">Anita (Full-Stack Dev)</option>
+                <option value="Rahul">Rahul (Product Designer)</option>
+                <option value="Priya">Priya (QA Engineer)</option>
               </select>
+            </div>
+
+            <div className="drawer-field-item">
+              <label style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <Hash size={12} /> Reference Number (Custom Field)
+              </label>
+              <input
+                type="text"
+                className="drawer-field-input"
+                placeholder="e.g. EML-2026-001"
+                value={task.customFields?.reference_number || ""}
+                onChange={e => updateCustomField("reference_number", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="drawer-field-grid">
+            <div className="drawer-field-item">
+              <label style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <Calendar size={12} /> Follow-up Date (Custom Field)
+              </label>
+              <input
+                type="date"
+                className="drawer-field-input"
+                value={task.customFields?.follow_up_date || ""}
+                onChange={e => updateCustomField("follow_up_date", e.target.value)}
+              />
             </div>
           </div>
 
           <div className="drawer-desc-box">
-            <label>Description & Notes</label>
+            <label>Description & Scope</label>
             <textarea
               className="drawer-desc-textarea"
               value={task.description || ""}
-              placeholder="Add detailed scope or notes..."
+              placeholder="Add detailed task scope or specifications..."
               onChange={e => updateField("description", e.target.value)}
             />
           </div>
 
-          {/* Interactive Checklist (PDF Page 7) */}
+          {/* Interactive Checklist (PDF Page 7: [x] Collect data, [x] Verify figures, [ ] Finalize charts) */}
           <div className="checklist-section">
             <div className="checklist-header">
-              <strong>Checklist Sub-items</strong>
+              <strong>Checklist Sub-items (PDF Page 7)</strong>
               <span>{checklistDone} / {checklistTotal} done ({checklistPct}%)</span>
             </div>
             <div className="checklist-progress-bar">
-              <div className="checklist-progress-fill" style={{ width: `${checklistPct}%` }} />
+              <div
+                className="checklist-progress-fill"
+                style={{ width: `${checklistPct}%`, background: "linear-gradient(90deg, #FFAA00, #10B981)" }}
+              />
             </div>
 
             <div className="checklist-items-list">
@@ -218,7 +274,7 @@ export function TaskDrawer({
               <input
                 type="text"
                 className="add-checklist-input"
-                placeholder="Add new step..."
+                placeholder="Add new measurable step (e.g. Finalize charts)..."
                 value={newChecklistText}
                 onChange={e => setNewChecklistText(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAddChecklist()}
@@ -233,7 +289,7 @@ export function TaskDrawer({
             </div>
           </div>
 
-          {/* Comments & Activity Stream */}
+          {/* Tabs: Comments, Activity Audit, Attachments (PDF Page 5 & 7) */}
           <div>
             <div className="drawer-tabs-nav">
               <button
@@ -246,16 +302,23 @@ export function TaskDrawer({
                 className={`drawer-tab-btn ${activeTab === "activity" ? "active" : ""}`}
                 onClick={() => setActiveTab("activity")}
               >
-                Audit Activity
+                Activity Log
+              </button>
+              <button
+                className={`drawer-tab-btn ${activeTab === "attachments" ? "active" : ""}`}
+                onClick={() => setActiveTab("attachments")}
+              >
+                Attachments ({task.attachments?.length || 0})
               </button>
             </div>
 
+            {/* Comments Stream */}
             {activeTab === "comments" && (
               <div className="drawer-tab-content active">
                 <div className="comments-list">
                   {(!task.comments || task.comments.length === 0) ? (
                     <div style={{ fontSize: "11px", color: "var(--muted-2)", padding: "10px 0" }}>
-                      No comments yet. Start a discussion with your team.
+                      No comments yet. Start a discussion with your team notes.
                     </div>
                   ) : (
                     task.comments.map((c, i) => (
@@ -273,7 +336,7 @@ export function TaskDrawer({
                 <div className="add-comment-box">
                   <textarea
                     className="add-comment-textarea"
-                    placeholder="Write a note or discussion update..."
+                    placeholder="Team notes and discussion..."
                     value={newCommentText}
                     onChange={e => setNewCommentText(e.target.value)}
                   />
@@ -283,19 +346,46 @@ export function TaskDrawer({
                       style={{ height: "34px", padding: "0 14px" }}
                       onClick={handleAddComment}
                     >
-                      Post Comment
+                      Post Note
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Activity Stream (PDF Page 7: - Priority changed, - Status changed) */}
             {activeTab === "activity" && (
               <div className="drawer-tab-content active">
                 <div className="activity-stream">
                   <div className="activity-item">
                     <div className="activity-dot-line">
-                      <div className="activity-marker" />
+                      <div className="activity-marker" style={{ background: "#FFAA00" }} />
+                    </div>
+                    <div className="activity-info">
+                      <strong>Status Updated</strong>
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", color: "var(--ink-2)" }}>
+                        Current status: {task.status}
+                      </p>
+                      <small>Logged in task_activity_logs</small>
+                    </div>
+                  </div>
+
+                  <div className="activity-item">
+                    <div className="activity-dot-line">
+                      <div className="activity-marker" style={{ background: "#2563EB" }} />
+                    </div>
+                    <div className="activity-info">
+                      <strong>Priority Assigned</strong>
+                      <p style={{ margin: "2px 0 0", fontSize: "11px", color: "var(--ink-2)" }}>
+                        Priority level set to {task.priority}
+                      </p>
+                      <small>Updated recently</small>
+                    </div>
+                  </div>
+
+                  <div className="activity-item">
+                    <div className="activity-dot-line">
+                      <div className="activity-marker" style={{ background: "#10B981" }} />
                     </div>
                     <div className="activity-info">
                       <strong>Task Created</strong>
@@ -303,6 +393,64 @@ export function TaskDrawer({
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Attachments Section (PDF Page 2 & 5: S3 / Cloudflare R2 task attachments) */}
+            {activeTab === "attachments" && (
+              <div className="drawer-tab-content active">
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+                  {(!task.attachments || task.attachments.length === 0) ? (
+                    <div style={{ fontSize: "11px", color: "var(--muted)", padding: "8px 0" }}>
+                      No files attached to this task.
+                    </div>
+                  ) : (
+                    task.attachments.map(att => (
+                      <div
+                        key={att.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "8px 12px",
+                          background: "#FAFBFC",
+                          border: "1px solid var(--border)",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <Paperclip size={14} style={{ color: "#FFAA00" }} />
+                          <strong>{att.name}</strong>
+                          <span style={{ fontSize: "10px", color: "var(--muted)" }}>({att.size})</span>
+                        </div>
+                        <span style={{ fontSize: "10px", color: "var(--muted)" }}>{att.uploadedAt}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {showAttachInput ? (
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. project_proposal.pdf"
+                      value={newAttachmentName}
+                      onChange={e => setNewAttachmentName(e.target.value)}
+                    />
+                    <button className="btn btn-primary" onClick={handleAddAttachment}>Attach</button>
+                    <button className="btn btn-secondary" onClick={() => setShowAttachInput(false)}>Cancel</button>
+                  </div>
+                ) : (
+                  <button
+                    className="btn btn-secondary"
+                    style={{ width: "100%", justifyContent: "center", gap: "6px" }}
+                    onClick={() => setShowAttachInput(true)}
+                  >
+                    <Plus size={14} /> Upload to Storage (S3 / R2)
+                  </button>
+                )}
               </div>
             )}
           </div>

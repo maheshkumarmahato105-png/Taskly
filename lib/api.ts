@@ -5,13 +5,17 @@ import type {
   UpcomingTask,
   UserAccount,
   AuditLogItem,
-  SystemSettings
+  SystemSettings,
+  DashboardWidgetConfig,
+  CustomFieldDefinition,
+  InAppNotification,
 } from "@/types/task";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const response = await fetch(url, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -28,7 +32,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // Tasks
+  // Tasks (PDF Page 4)
   tasks: (params?: { status?: string; category?: string; search?: string }) => {
     const q = new URLSearchParams();
     if (params?.status) q.set("status", params.status);
@@ -38,47 +42,30 @@ export const api = {
     return request<{ items: Task[] }>(`/tasks${qs ? `?${qs}` : ""}`);
   },
   getTask: (id: string) => request<Task>(`/tasks/${id}`),
-  createTask: (payload: Record<string, unknown>) =>
+  createTask: (payload: Partial<Task>) =>
     request<Task>("/tasks", { method: "POST", body: JSON.stringify(payload) }),
-  updateTask: (id: string, payload: Record<string, unknown>) =>
+  updateTask: (id: string, payload: Partial<Task>) =>
     request<Task>(`/tasks/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   deleteTask: (id: string) =>
     request<{ deleted: boolean }>(`/tasks/${id}`, { method: "DELETE" }),
 
   // Inline updates (PDF Page 4)
-  updateStatus: (id: string, statusId: string) =>
-    request<Task>(`/tasks/${id}/status`, { method: "PATCH", body: JSON.stringify({ statusId }) }),
-  updatePriority: (id: string, priorityId: string) =>
-    request<Task>(`/tasks/${id}/priority`, { method: "PATCH", body: JSON.stringify({ priorityId }) }),
-  updateCategory: (id: string, categoryId: string) =>
-    request<Task>(`/tasks/${id}/category`, { method: "PATCH", body: JSON.stringify({ categoryId }) }),
+  updateStatus: (id: string, status: string) =>
+    request<Task>(`/tasks/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  updatePriority: (id: string, priority: string) =>
+    request<Task>(`/tasks/${id}/priority`, { method: "PATCH", body: JSON.stringify({ priority }) }),
+  updateCategory: (id: string, category: string) =>
+    request<Task>(`/tasks/${id}/category`, { method: "PATCH", body: JSON.stringify({ category }) }),
   updateDueDate: (id: string, dueDate: string | null) =>
     request<Task>(`/tasks/${id}/due-date`, { method: "PATCH", body: JSON.stringify({ dueDate }) }),
 
-  // Checklist items (PDF Page 7)
-  addChecklistItem: (taskId: string, text: string) =>
-    request<Task>(`/tasks/${taskId}/checklist`, { method: "POST", body: JSON.stringify({ text }) }),
-  toggleChecklistItem: (taskId: string, itemId: string, done: boolean) =>
-    request<Task>(`/tasks/${taskId}/checklist/${itemId}`, { method: "PATCH", body: JSON.stringify({ done }) }),
-  deleteChecklistItem: (taskId: string, itemId: string) =>
-    request<{ deleted: boolean }>(`/tasks/${taskId}/checklist/${itemId}`, { method: "DELETE" }),
-
-  // Comments (PDF Page 7)
-  addComment: (taskId: string, text: string, author?: string) =>
-    request<Task>(`/tasks/${taskId}/comments`, { method: "POST", body: JSON.stringify({ text, author }) }),
-
-  // Dashboard & Lookups
+  // Dashboard & Lookups (PDF Page 4)
   summary: () => request<DashboardSummary>("/dashboard/summary"),
   upcoming: () => request<{ items: UpcomingTask[] }>("/dashboard/upcoming"),
-  widgets: () => request<{ items: Array<{ id: string; name: string; position: number }> }>("/dashboard/widgets"),
+  widgets: () => request<{ items: DashboardWidgetConfig[] }>("/dashboard/widgets"),
+  publicConfig: () => request<SystemSettings>("/config/public"),
   categories: () => request<{ items: Lookup[] }>("/task-categories"),
   statuses: () => request<{ items: Lookup[] }>("/task-statuses"),
   priorities: () => request<{ items: Lookup[] }>("/task-priorities"),
-  publicConfig: () => request<SystemSettings>("/config/public"),
-
-  // Admin APIs (PDF Page 6)
-  adminUsers: () => request<{ items: UserAccount[] }>("/admin/users"),
-  adminAuditLogs: () => request<{ items: AuditLogItem[] }>("/admin/audit-logs"),
-  updateSettings: (settings: Partial<SystemSettings>) =>
-    request<SystemSettings>("/admin/settings", { method: "PUT", body: JSON.stringify(settings) }),
+  health: () => request<{ status: string }>("/health"),
 };

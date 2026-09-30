@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
-import { X } from "lucide-react";
+import { X, Hash, Calendar } from "lucide-react";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface TaskModalProps {
     category: string;
     dueDate: string;
     assignee: string;
+    customFields?: Record<string, string>;
   }) => void;
 }
 
@@ -36,8 +37,9 @@ export function TaskModal({
   const [category, setCategory] = useState("Work");
   const [dueDate, setDueDate] = useState("");
   const [assignee, setAssignee] = useState("Bishal");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
 
-  // Populate form when editing an existing task
   useEffect(() => {
     if (!isOpen) return;
     if (editingTask) {
@@ -48,8 +50,9 @@ export function TaskModal({
       setCategory(editingTask.category);
       setDueDate(editingTask.dueDate || "");
       setAssignee(editingTask.assignee || "Bishal");
+      setReferenceNumber(editingTask.customFields?.reference_number || "");
+      setFollowUpDate(editingTask.customFields?.follow_up_date || "");
     } else {
-      // Reset to defaults for new task creation
       setTitle("");
       setDescription("");
       setStatus("Not Started");
@@ -57,8 +60,10 @@ export function TaskModal({
       setCategory(categories[0]?.name || "Work");
       setDueDate(new Date().toISOString().slice(0, 10));
       setAssignee("Bishal");
+      setReferenceNumber(`EML-${Math.floor(100 + Math.random() * 900)}`);
+      setFollowUpDate("");
     }
-  }, [isOpen, editingTask]); // intentionally excludes categories to avoid resetting mid-session
+  }, [isOpen, editingTask]);
 
   if (!isOpen) return null;
 
@@ -76,6 +81,10 @@ export function TaskModal({
       category,
       dueDate,
       assignee,
+      customFields: {
+        reference_number: referenceNumber.trim(),
+        follow_up_date: followUpDate,
+      },
     });
   }
 
@@ -99,7 +108,7 @@ export function TaskModal({
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g. Prepare monthly performance report"
+                placeholder="e.g. Prepare monthly report"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 autoFocus
@@ -107,7 +116,7 @@ export function TaskModal({
             </div>
 
             <div className="form-field">
-              <label>Task Details & Notes</label>
+              <label>Task Details & Scope</label>
               <textarea
                 className="form-textarea"
                 placeholder="Add notes, requirements, or reference links..."
@@ -118,7 +127,7 @@ export function TaskModal({
 
             <div className="form-grid-2">
               <div className="form-field">
-                <label>Status</label>
+                <label>Workflow Status</label>
                 <select
                   className="form-select"
                   value={status}
@@ -137,9 +146,9 @@ export function TaskModal({
                   value={priority}
                   onChange={e => setPriority(e.target.value as TaskPriority)}
                 >
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
                   <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
                   <option value="Urgent">Urgent</option>
                 </select>
               </div>
@@ -172,17 +181,44 @@ export function TaskModal({
 
             <div className="form-grid-2">
               <div className="form-field">
-                <label>Assignee</label>
+                <label>Assignee (PDF Page 7)</label>
                 <select
                   className="form-select"
                   value={assignee}
                   onChange={e => setAssignee(e.target.value)}
                 >
-                  <option value="Bishal">Bishal (Lead)</option>
-                  <option value="Anita">Anita (Dev)</option>
-                  <option value="Rahul">Rahul (Design)</option>
-                  <option value="Priya">Priya (QA)</option>
+                  <option value="Bishal">Bishal (Lead Admin)</option>
+                  <option value="Anita">Anita (Full-Stack Dev)</option>
+                  <option value="Rahul">Rahul (Product Designer)</option>
+                  <option value="Priya">Priya (QA Engineer)</option>
                 </select>
+              </div>
+
+              <div className="form-field">
+                <label style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Hash size={12} /> Reference Number (Custom Field)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. EML-2026-001"
+                  value={referenceNumber}
+                  onChange={e => setReferenceNumber(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-field">
+                <label style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Calendar size={12} /> Follow-up Date (Custom Field)
+                </label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={followUpDate}
+                  onChange={e => setFollowUpDate(e.target.value)}
+                />
               </div>
             </div>
           </div>

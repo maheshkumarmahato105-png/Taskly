@@ -3,8 +3,11 @@ import React from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Taskly — Enterprise Task Management Platform",
-  description: "Professional task management workspace for Taskly",
+  title: "EasyMyLearning — Task Manager",
+  description: "Next.js + React frontend | Go backend | PostgreSQL | Docker | REST API",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
