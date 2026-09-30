@@ -33,6 +33,7 @@ interface SidebarProps {
   onSelectCategory?: (category: string) => void;
   currentFilter?: string;
   onFilterChange?: (filter: string) => void;
+  categoryCounts?: Record<string, number>;
 }
 
 export function Sidebar({
@@ -44,6 +45,7 @@ export function Sidebar({
   onSelectCategory,
   currentFilter,
   onFilterChange,
+  categoryCounts,
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -180,20 +182,14 @@ export function Sidebar({
                     textAlign: "left",
                     cursor: "pointer",
                     border: "none",
-                    background: isSelected ? "#2A3448" : "transparent",
-                    boxShadow: isSelected ? "inset 3px 0 0 var(--brand)" : "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "9px 10px",
                   }}
                   title={isSelected ? `Clear filter: ${cat.name}` : `Show only ${cat.name} tasks`}
                 >
                   <span className="category-dot" style={{ background: cat.color || "#64748B" }} />
-                  <span className="nav-title" style={{ color: isSelected ? "#fff" : undefined }}>{cat.name}</span>
-                  {isSelected && (
-                    <span className="nav-badge" style={{ background: "var(--brand)", color: "#1E293B", fontWeight: 800 }}>
-                      Selected
+                  <span className="nav-title">{cat.name}</span>
+                  {categoryCounts && categoryCounts[cat.name] !== undefined && (
+                    <span className="nav-badge">
+                      {categoryCounts[cat.name]}
                     </span>
                   )}
                 </button>

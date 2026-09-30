@@ -124,38 +124,51 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 
 /* Nav Group */
-.nav-group { margin-bottom: 6px; }
+.nav-group { margin-bottom: 12px; }
 .nav-label {
-  padding: 8px 10px 6px; color: #77849A; font-size: 9px; font-weight: 800;
-  letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 10px 12px 6px; color: #5A6B82; font-size: 10px; font-weight: 800;
+  letter-spacing: 1.4px; text-transform: uppercase;
   display: flex; justify-content: space-between; align-items: center;
 }
 .nav-label-action {
-  color: var(--brand); cursor: pointer; font-size: 10px; font-weight: 700;
-  letter-spacing: 0;
+  color: #FFAA00; cursor: pointer; font-size: 10px; font-weight: 800;
+  letter-spacing: 0.5px; text-transform: uppercase;
 }
-.nav-list { display: flex; flex-direction: column; gap: 2px; }
+.nav-list { display: flex; flex-direction: column; gap: 3px; }
 
 .nav-item {
-  display: flex; align-items: center; gap: 10px; padding: 9px 10px;
-  border-radius: 9px; color: #B8C4D6; font-size: 12px; font-weight: 600;
-  transition: background 0.12s, color 0.12s;
+  position: relative;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: 12px; color: #B8C4D6; font-size: 13px; font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  overflow: hidden;
 }
 .nav-item:hover { background: rgba(255, 255, 255, 0.055); color: #fff; }
 .nav-item.active {
-  background: #2A3448; color: #fff;
-  box-shadow: inset 3px 0 0 var(--brand);
+  background: #222D42; color: #fff;
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #FFAA00;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.45);
 }
 .nav-icon {
   width: 20px; height: 20px; display: grid; place-items: center; color: #8FA0B6; flex-shrink: 0;
 }
-.nav-item.active .nav-icon { color: var(--brand); }
+.nav-item.active .nav-icon { color: #FFAA00; }
 .nav-title {
   flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .nav-badge {
-  min-width: 22px; text-align: center; padding: 2px 6px; border-radius: 999px;
-  background: #1E293B; color: #94A3B8; font-size: 9px; font-weight: 700;
+  min-width: 22px; text-align: center; padding: 2px 7px; border-radius: 999px;
+  background: #1E293B; color: #94A3B8; font-size: 10px; font-weight: 700;
 }
 .nav-item.active .nav-badge { background: #403416; color: #FFE3A3; }
 

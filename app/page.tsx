@@ -185,6 +185,14 @@ export default function HomePage() {
 
   const completionRate = tasks.length > 0 ? Math.round((counts.completed / tasks.length) * 100) : 0;
 
+  const categoryCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    tasks.forEach(t => {
+      map[t.category] = (map[t.category] || 0) + 1;
+    });
+    return map;
+  }, [tasks]);
+
   const filteredTasks = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const list = tasks.filter(t => {
@@ -319,6 +327,7 @@ export default function HomePage() {
         onSelectCategory={handleSelectCategory}
         currentFilter={currentFilter}
         onFilterChange={handleFilterChange}
+        categoryCounts={categoryCounts}
       />
 
       <div className="main-wrapper">

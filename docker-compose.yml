@@ -37,7 +37,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
     container_name: taskly-web
     restart: unless-stopped
     environment:
