@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Clock3,
@@ -12,7 +12,6 @@ import {
   Settings,
   LayoutGrid,
   Layers,
-  FileCode2,
   FolderTree,
 } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
@@ -30,9 +29,10 @@ interface SidebarProps {
   completionRate: number;
   brandName?: string;
   onAddCategory?: () => void;
-  onOpenArchitectureModal?: () => void;
   selectedCategory?: string;
   onSelectCategory?: (category: string) => void;
+  currentFilter?: string;
+  onFilterChange?: (filter: string) => void;
 }
 
 export function Sidebar({
@@ -40,14 +40,41 @@ export function Sidebar({
   counts,
   completionRate,
   brandName = "EasyMyLearning",
-  onAddCategory,
-  onOpenArchitectureModal,
   selectedCategory,
   onSelectCategory,
+  currentFilter,
+  onFilterChange,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const isNavActive = (path: string) => pathname === path;
+
+  const isDashboardActive = pathname === "/" && (!currentFilter || currentFilter === "all");
+  const isAllTasksActive = pathname === "/tasks" && (!currentFilter || currentFilter === "all");
+  const isTodayActive = pathname === "/tasks" && currentFilter === "today";
+  const isUpcomingActive = pathname === "/tasks" && currentFilter === "upcoming";
+  const isCompletedActive = pathname === "/tasks" && currentFilter === "completed";
+  const isOverdueActive = pathname === "/tasks" && currentFilter === "overdue";
+
+  const handleFilterClick = (e: React.MouseEvent, filterKey: string) => {
+    if (e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    if (pathname === "/tasks") {
+      onFilterChange?.(filterKey);
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        if (filterKey === "all") {
+          url.searchParams.delete("filter");
+        } else {
+          url.searchParams.set("filter", filterKey);
+        }
+        window.history.pushState({}, "", url.toString());
+      }
+    } else {
+      router.push(filterKey === "all" ? "/tasks" : `/tasks?filter=${filterKey}`);
+    }
+  };
 
   return (
     <aside className="sidebar">
@@ -61,36 +88,61 @@ export function Sidebar({
         <div className="nav-group">
           <div className="nav-label">Workspace</div>
           <nav className="nav-list">
-            <Link href="/" className={`nav-item ${isNavActive("/") ? "active" : ""}`}>
+            <Link href="/" className={`nav-item ${isDashboardActive ? "active" : ""}`} title="Overview Dashboard">
               <span className="nav-icon"><LayoutGrid size={17} /></span>
               <span className="nav-title">Dashboard</span>
               <span className="nav-badge">{counts.total}</span>
             </Link>
 
-            <Link href="/tasks" className={`nav-item ${isNavActive("/tasks") ? "active" : ""}`}>
+            <Link
+              href="/tasks"
+              onClick={e => handleFilterClick(e, "all")}
+              className={`nav-item ${isAllTasksActive ? "active" : ""}`}
+              title="Show all tasks"
+            >
               <span className="nav-icon"><ListChecks size={17} /></span>
               <span className="nav-title">All Tasks</span>
             </Link>
 
-            <Link href="/tasks?filter=today" className="nav-item">
+            <Link
+              href="/tasks?filter=today"
+              onClick={e => handleFilterClick(e, "today")}
+              className={`nav-item ${isTodayActive ? "active" : ""}`}
+              title="Show only tasks due today"
+            >
               <span className="nav-icon"><Clock3 size={17} /></span>
               <span className="nav-title">Today's Focus</span>
               <span className="nav-badge">{counts.today}</span>
             </Link>
 
-            <Link href="/tasks?filter=upcoming" className="nav-item">
+            <Link
+              href="/tasks?filter=upcoming"
+              onClick={e => handleFilterClick(e, "upcoming")}
+              className={`nav-item ${isUpcomingActive ? "active" : ""}`}
+              title="Show only upcoming tasks"
+            >
               <span className="nav-icon"><CalendarClock size={17} /></span>
               <span className="nav-title">Upcoming</span>
               <span className="nav-badge">{counts.upcoming}</span>
             </Link>
 
-            <Link href="/tasks?filter=completed" className="nav-item">
+            <Link
+              href="/tasks?filter=completed"
+              onClick={e => handleFilterClick(e, "completed")}
+              className={`nav-item ${isCompletedActive ? "active" : ""}`}
+              title="Show only completed tasks"
+            >
               <span className="nav-icon"><CheckCircle2 size={17} /></span>
               <span className="nav-title">Completed</span>
               <span className="nav-badge">{counts.completed}</span>
             </Link>
 
-            <Link href="/tasks?filter=overdue" className="nav-item">
+            <Link
+              href="/tasks?filter=overdue"
+              onClick={e => handleFilterClick(e, "overdue")}
+              className={`nav-item ${isOverdueActive ? "active" : ""}`}
+              title="Show only overdue tasks"
+            >
               <span className="nav-icon" style={{ color: "var(--red)" }}><ShieldAlert size={17} /></span>
               <span className="nav-title">Overdue</span>
               <span className="nav-badge" style={{ color: "var(--red)", background: "rgba(239,68,68,0.18)" }}>
@@ -118,8 +170,8 @@ export function Sidebar({
                   onClick={() => {
                     if (onSelectCategory) {
                       onSelectCategory(isSelected ? "" : cat.name);
-                    } else if (typeof window !== "undefined") {
-                      window.location.href = `/tasks?category=${encodeURIComponent(cat.name)}`;
+                    } else {
+                      router.push(`/tasks?category=${encodeURIComponent(cat.name)}`);
                     }
                   }}
                   className={`nav-item ${isSelected ? "active" : ""}`}
@@ -162,17 +214,6 @@ export function Sidebar({
               <span className="nav-icon"><Settings size={17} /></span>
               <span className="nav-title">Preferences</span>
             </Link>
-            {onOpenArchitectureModal && (
-              <button
-                className="nav-item"
-                onClick={onOpenArchitectureModal}
-                style={{ width: "100%", textAlign: "left", background: "none", border: 0, cursor: "pointer", color: "#FFAA00" }}
-              >
-                <span className="nav-icon"><FileCode2 size={17} /></span>
-                <span className="nav-title">Architecture Plan</span>
-                <span className="nav-badge" style={{ background: "rgba(255,170,0,0.2)", color: "#FFAA00" }}>PDF</span>
-              </button>
-            )}
           </nav>
         </div>
 

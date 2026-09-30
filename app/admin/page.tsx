@@ -10,7 +10,6 @@ import { CustomFieldsManager } from "@/components/admin/CustomFieldsManager";
 import { WidgetsManager } from "@/components/admin/WidgetsManager";
 import { RolesManager } from "@/components/admin/RolesManager";
 import { DatabaseOperations } from "@/components/admin/DatabaseOperations";
-import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { toast } from "@/components/ui/Toast";
 import {
@@ -57,8 +56,6 @@ export default function AdminPage() {
     companyName: "EasyMyLearning Inc.",
     supportEmail: "support@easymylearning.com",
   });
-
-  const [archModalOpen, setArchModalOpen] = useState(false);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -140,13 +137,11 @@ export default function AdminPage() {
         }}
         completionRate={summary.completionRate}
         brandName={settings.appName}
-        onOpenArchitectureModal={() => setArchModalOpen(true)}
       />
 
       <div className="main-wrapper">
         <Topbar
           breadcrumbTitle="Admin Configuration Console"
-          onOpenArchitecture={() => setArchModalOpen(true)}
           onHelpClick={() => setShortcutsModalOpen(true)}
         />
 
@@ -158,11 +153,6 @@ export default function AdminPage() {
               <p className="hero-desc">
                 Configure statuses, priorities, task categories, dashboard widgets, branding, and custom fields without rebuilding.
               </p>
-            </div>
-            <div className="hero-controls">
-              <button className="btn btn-secondary" onClick={() => setArchModalOpen(true)}>
-                Architecture Plan
-              </button>
             </div>
           </div>
 
@@ -295,7 +285,6 @@ export default function AdminPage() {
         </main>
       </div>
 
-      <ArchitectureModal isOpen={archModalOpen} onClose={() => setArchModalOpen(false)} />
       <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
     </div>
   );

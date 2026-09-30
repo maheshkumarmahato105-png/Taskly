@@ -11,7 +11,6 @@ import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import { BulkActions } from "@/components/tasks/BulkActions";
 import { FilterBar } from "@/components/tasks/FilterBar";
-import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { api } from "@/lib/api";
 import {
@@ -24,7 +23,7 @@ import {
   addStoredAuditLog,
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
-import { Plus, FileText, Command } from "lucide-react";
+import { Plus, Command } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 
 function getGreeting(): string {
@@ -50,7 +49,6 @@ export default function HomePage() {
   const [activeDrawerTask, setActiveDrawerTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [archModalOpen, setArchModalOpen] = useState(false);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -95,13 +93,17 @@ export default function HomePage() {
     }
   }, [tasks]);
 
-  // Read initial category from URL query parameters (e.g., ?category=Work)
+  // Read initial category and filter from URL query parameters (e.g., ?category=Work&filter=today)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const cat = params.get("category");
       if (cat) {
         setSelectedCategory(cat);
+      }
+      const f = params.get("filter");
+      if (f) {
+        setCurrentFilter(f);
       }
     }
   }, []);
@@ -114,6 +116,19 @@ export default function HomePage() {
         url.searchParams.set("category", catName);
       } else {
         url.searchParams.delete("category");
+      }
+      window.history.pushState({}, "", url.toString());
+    }
+  };
+
+  const handleFilterChange = (filterKey: string) => {
+    setCurrentFilter(filterKey);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (filterKey === "all") {
+        url.searchParams.delete("filter");
+      } else {
+        url.searchParams.set("filter", filterKey);
       }
       window.history.pushState({}, "", url.toString());
     }
@@ -147,7 +162,6 @@ export default function HomePage() {
       } else if (e.key === "Escape") {
         setActiveDrawerTask(null);
         setModalOpen(false);
-        setArchModalOpen(false);
         setShortcutsModalOpen(false);
       }
     }
@@ -182,7 +196,7 @@ export default function HomePage() {
         const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority} ${t.customFields?.reference_number || ""}`.toLowerCase();
         if (!str.includes(searchQuery.toLowerCase())) return false;
       }
-      if (currentFilter === "today") return t.dueDate === today;
+      if (currentFilter === "today") return Boolean(t.dueDate === today && t.status !== "Completed");
       if (currentFilter === "upcoming") return Boolean(t.dueDate && t.dueDate > today && t.status !== "Completed");
       if (currentFilter === "completed") return t.status === "Completed";
       if (currentFilter === "not-started") return t.status === "Not Started";
@@ -301,15 +315,15 @@ export default function HomePage() {
         counts={counts}
         completionRate={completionRate}
         brandName="EasyMyLearning"
-        onOpenArchitectureModal={() => setArchModalOpen(true)}
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategory}
+        currentFilter={currentFilter}
+        onFilterChange={handleFilterChange}
       />
 
       <div className="main-wrapper">
         <Topbar
           breadcrumbTitle="Task Manager Workspace"
-          onOpenArchitecture={() => setArchModalOpen(true)}
           onHelpClick={() => setShortcutsModalOpen(true)}
         />
 
@@ -323,13 +337,6 @@ export default function HomePage() {
               </p>
             </div>
             <div className="hero-controls">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setArchModalOpen(true)}
-                title="View Full Architecture Plan"
-              >
-                <FileText size={15} style={{ color: "#FFAA00" }} /> Architecture Plan
-              </button>
               <button
                 className="btn btn-secondary"
                 onClick={() => setShortcutsModalOpen(true)}
@@ -378,11 +385,11 @@ export default function HomePage() {
                 currentFilter={currentFilter}
                 searchQuery={searchQuery}
                 sortBy={sortBy}
-                onFilterChange={setCurrentFilter}
+                onFilterChange={handleFilterChange}
                 onSearchChange={setSearchQuery}
                 onSortChange={setSortBy}
                 onSavedViewChange={view =>
-                  setCurrentFilter(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")
+                  handleFilterChange(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")
                 }
                 categories={categories}
                 selectedCategory={selectedCategory}
@@ -491,7 +498,6 @@ export default function HomePage() {
         onSave={handleSaveTask}
       />
 
-      <ArchitectureModal isOpen={archModalOpen} onClose={() => setArchModalOpen(false)} />
       <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
     </div>
   );

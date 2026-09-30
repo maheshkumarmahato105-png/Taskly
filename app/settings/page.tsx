@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
-import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { toast } from "@/components/ui/Toast";
 import {
@@ -26,7 +25,6 @@ export default function SettingsPage() {
     companyName: "EasyMyLearning Inc.",
     supportEmail: "support@easymylearning.com",
   });
-  const [archModalOpen, setArchModalOpen] = useState(false);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
@@ -58,13 +56,11 @@ export default function SettingsPage() {
         }}
         completionRate={summary.completionRate}
         brandName="EasyMyLearning"
-        onOpenArchitectureModal={() => setArchModalOpen(true)}
       />
 
       <div className="main-wrapper">
         <Topbar
           breadcrumbTitle="Preferences &amp; Settings"
-          onOpenArchitecture={() => setArchModalOpen(true)}
           onHelpClick={() => setShortcutsModalOpen(true)}
         />
 
@@ -180,7 +176,6 @@ export default function SettingsPage() {
         </main>
       </div>
 
-      <ArchitectureModal isOpen={archModalOpen} onClose={() => setArchModalOpen(false)} />
       <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
     </div>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Bell, Search, HelpCircle, ChevronDown, Check, FileText } from "lucide-react";
+import { Bell, Search, HelpCircle, ChevronDown, Check } from "lucide-react";
 import { BrandMark } from "@/components/ui/BrandLogo";
 import { loadStoredNotifications, saveStoredNotifications } from "@/lib/store";
 import type { InAppNotification } from "@/types/task";
@@ -11,7 +11,6 @@ interface TopbarProps {
   breadcrumbTitle?: string;
   onSearchClick?: () => void;
   onHelpClick?: () => void;
-  onOpenArchitecture?: () => void;
   userName?: string;
   userRole?: string;
   userInitials?: string;
@@ -21,7 +20,6 @@ export function Topbar({
   breadcrumbTitle = "Tasks Dashboard",
   onSearchClick,
   onHelpClick,
-  onOpenArchitecture,
   userName = "Bishal",
   userRole = "Lead Admin",
   userInitials = "BJ",
@@ -62,17 +60,6 @@ export function Topbar({
       </div>
 
       <div className="topbar-actions">
-        {onOpenArchitecture && (
-          <button
-            className="btn btn-secondary topbar-plan-btn"
-            onClick={onOpenArchitecture}
-            style={{ height: "34px", padding: "0 10px", fontSize: "11px", gap: "6px" }}
-            title="View Architecture & Deployment Plan"
-          >
-            <FileText size={14} style={{ color: "#FFAA00" }} />
-            <span className="topbar-btn-text">Plan Specs</span>
-          </button>
-        )}
 
         {onSearchClick && (
           <button className="icon-btn" onClick={onSearchClick} title="Search tasks (Press /)">

@@ -9,7 +9,6 @@ import { TaskDrawer } from "@/components/tasks/TaskDrawer";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import { BulkActions } from "@/components/tasks/BulkActions";
 import { FilterBar } from "@/components/tasks/FilterBar";
-import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { api } from "@/lib/api";
 import {
@@ -20,7 +19,7 @@ import {
   addStoredAuditLog,
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
-import { Plus, FileText, Command } from "lucide-react";
+import { Plus, Command } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 
 export default function TasksPage() {
@@ -38,7 +37,6 @@ export default function TasksPage() {
   const [activeDrawerTask, setActiveDrawerTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [archModalOpen, setArchModalOpen] = useState(false);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -70,13 +68,17 @@ export default function TasksPage() {
     }
   }, [tasks]);
 
-  // Read initial category from URL query parameters (e.g., ?category=Work)
+  // Read initial category and filter from URL query parameters (e.g., ?category=Work&filter=today)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const cat = params.get("category");
       if (cat) {
         setSelectedCategory(cat);
+      }
+      const f = params.get("filter");
+      if (f) {
+        setCurrentFilter(f);
       }
     }
   }, []);
@@ -89,6 +91,19 @@ export default function TasksPage() {
         url.searchParams.set("category", catName);
       } else {
         url.searchParams.delete("category");
+      }
+      window.history.pushState({}, "", url.toString());
+    }
+  };
+
+  const handleFilterChange = (filterKey: string) => {
+    setCurrentFilter(filterKey);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (filterKey === "all") {
+        url.searchParams.delete("filter");
+      } else {
+        url.searchParams.set("filter", filterKey);
       }
       window.history.pushState({}, "", url.toString());
     }
@@ -119,7 +134,6 @@ export default function TasksPage() {
       } else if (e.key === "Escape") {
         setActiveDrawerTask(null);
         setModalOpen(false);
-        setArchModalOpen(false);
         setShortcutsModalOpen(false);
       }
     }
@@ -140,6 +154,48 @@ export default function TasksPage() {
 
   const completionRate = tasks.length > 0 ? Math.round((counts.completed / tasks.length) * 100) : 0;
 
+  const sectionMeta = useMemo(() => {
+    if (selectedCategory) {
+      return {
+        tag: `CATEGORY · ${selectedCategory.toUpperCase()}`,
+        title: `${selectedCategory} Tasks`,
+        desc: `Viewing tasks specifically organized under the ${selectedCategory} category.`,
+      };
+    }
+    switch (currentFilter) {
+      case "today":
+        return {
+          tag: "TODAY'S FOCUS",
+          title: "Today's Priority Tasks",
+          desc: "Tasks scheduled for today. Hit your daily milestones and keep momentum.",
+        };
+      case "upcoming":
+        return {
+          tag: "UPCOMING WORK",
+          title: "Upcoming Scheduled Tasks",
+          desc: "Tasks due in the coming days. Plan ahead and prevent bottlenecks.",
+        };
+      case "completed":
+        return {
+          tag: "COMPLETED DELIVERABLES",
+          title: "Completed Tasks",
+          desc: "Successfully finished deliverables, archived tasks, and milestone accomplishments.",
+        };
+      case "overdue":
+        return {
+          tag: "ATTENTION REQUIRED",
+          title: "Overdue Tasks",
+          desc: "Past due deliverables requiring immediate attention and action.",
+        };
+      default:
+        return {
+          tag: "TASK WORKSPACE",
+          title: "All Tasks & Deliverables",
+          desc: "Interactive filtering, sorting, inline editing, and Kanban workflow management.",
+        };
+    }
+  }, [currentFilter, selectedCategory]);
+
   const filteredTasks = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const list = tasks.filter(t => {
@@ -151,7 +207,7 @@ export default function TasksPage() {
         const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority} ${t.customFields?.reference_number || ""}`.toLowerCase();
         if (!str.includes(searchQuery.toLowerCase())) return false;
       }
-      if (currentFilter === "today") return t.dueDate === today;
+      if (currentFilter === "today") return Boolean(t.dueDate === today && t.status !== "Completed");
       if (currentFilter === "upcoming") return Boolean(t.dueDate && t.dueDate > today && t.status !== "Completed");
       if (currentFilter === "completed") return t.status === "Completed";
       if (currentFilter === "not-started") return t.status === "Not Started";
@@ -276,29 +332,26 @@ export default function TasksPage() {
         counts={counts}
         completionRate={completionRate}
         brandName="EasyMyLearning"
-        onOpenArchitectureModal={() => setArchModalOpen(true)}
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategory}
+        currentFilter={currentFilter}
+        onFilterChange={handleFilterChange}
       />
 
       <div className="main-wrapper">
         <Topbar
-          breadcrumbTitle="All Tasks Workspace"
-          onOpenArchitecture={() => setArchModalOpen(true)}
+          breadcrumbTitle={sectionMeta.title}
           onHelpClick={() => setShortcutsModalOpen(true)}
         />
 
         <main className="content-area">
           <div className="hero">
             <div>
-              <div className="hero-tag" style={{ color: "#FFAA00" }}>TASK WORKSPACE</div>
-              <h1 className="hero-title">All Tasks &amp; Deliverables</h1>
-              <p className="hero-desc">Interactive filtering, sorting, inline editing, and Kanban workflow management.</p>
+              <div className="hero-tag" style={{ color: "#FFAA00" }}>{sectionMeta.tag}</div>
+              <h1 className="hero-title">{sectionMeta.title}</h1>
+              <p className="hero-desc">{sectionMeta.desc}</p>
             </div>
             <div className="hero-controls">
-              <button className="btn btn-secondary" onClick={() => setArchModalOpen(true)}>
-                <FileText size={15} style={{ color: "#FFAA00" }} /> Architecture Plan
-              </button>
               <button className="btn btn-secondary" onClick={() => setShortcutsModalOpen(true)}>
                 <Command size={15} /> Shortcuts
               </button>
@@ -317,7 +370,7 @@ export default function TasksPage() {
           <div className="panel-card">
             <div className="task-panel-header">
               <div className="task-panel-title">
-                <h2>Tasks Overview</h2>
+                <h2>{sectionMeta.title}</h2>
                 <p>Track progress, priorities, and deadlines across your teams.</p>
               </div>
               <div className="view-switchers">
@@ -340,10 +393,10 @@ export default function TasksPage() {
               currentFilter={currentFilter}
               searchQuery={searchQuery}
               sortBy={sortBy}
-              onFilterChange={setCurrentFilter}
+              onFilterChange={handleFilterChange}
               onSearchChange={setSearchQuery}
               onSortChange={setSortBy}
-              onSavedViewChange={view => setCurrentFilter(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")}
+              onSavedViewChange={view => handleFilterChange(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")}
               categories={categories}
               selectedCategory={selectedCategory}
               onCategoryChange={handleSelectCategory}
@@ -440,7 +493,6 @@ export default function TasksPage() {
         onSave={handleSaveTask}
       />
 
-      <ArchitectureModal isOpen={archModalOpen} onClose={() => setArchModalOpen(false)} />
       <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
     </div>
   );

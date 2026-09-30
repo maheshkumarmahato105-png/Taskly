@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { CategoryManager } from "@/components/admin/CategoryManager";
-import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { toast } from "@/components/ui/Toast";
 import {
@@ -17,7 +16,6 @@ import type { Lookup } from "@/types/task";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Lookup[]>([]);
-  const [archModalOpen, setArchModalOpen] = useState(false);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -60,13 +58,11 @@ export default function CategoriesPage() {
         }}
         completionRate={summary.completionRate}
         brandName="EasyMyLearning"
-        onOpenArchitectureModal={() => setArchModalOpen(true)}
       />
 
       <div className="main-wrapper">
         <Topbar
           breadcrumbTitle="Task Categories"
-          onOpenArchitecture={() => setArchModalOpen(true)}
           onHelpClick={() => setShortcutsModalOpen(true)}
         />
 
@@ -90,7 +86,6 @@ export default function CategoriesPage() {
         </main>
       </div>
 
-      <ArchitectureModal isOpen={archModalOpen} onClose={() => setArchModalOpen(false)} />
       <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
     </div>
   );

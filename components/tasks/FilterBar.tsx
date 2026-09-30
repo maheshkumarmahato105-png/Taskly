@@ -32,6 +32,7 @@ export function FilterBar({
   const tabs = [
     { key: "all", label: "All" },
     { key: "today", label: "Today" },
+    { key: "upcoming", label: "Upcoming" },
     { key: "not-started", label: "Not Started" },
     { key: "in-progress", label: "In Progress" },
     { key: "completed", label: "Completed" },
