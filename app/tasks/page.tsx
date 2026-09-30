@@ -12,10 +12,8 @@ import { FilterBar } from "@/components/tasks/FilterBar";
 import { api } from "@/lib/api";
 import {
   loadStoredTasks,
-  saveStoredTasks,
   loadStoredCategories,
   loadStoredStatuses,
-  addStoredAuditLog,
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
 import { Plus } from "lucide-react";
@@ -25,6 +23,7 @@ export default function TasksPage() {
   const [statuses, setStatuses] = useState<Lookup[]>([]);
   const [categories, setCategories] = useState<Lookup[]>([]);
   const [loading, setLoading] = useState(true);
+  void loading; // consumed below once tasks have loaded
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [currentFilter, setCurrentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,12 +96,12 @@ export default function TasksPage() {
 
     list.sort((a, b) => {
       if (sortBy === "priority") {
-        const rank = { Urgent: 1, High: 2, Medium: 3, Low: 4 };
-        return (rank[a.priority] || 9) - (rank[b.priority] || 9);
+        const rank: Record<string, number> = { Urgent: 1, High: 2, Medium: 3, Low: 4 };
+        return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
       }
       if (sortBy === "status") {
-        const rank = { "In Progress": 1, "Not Started": 2, "Completed": 3 };
-        return (rank[a.status] || 9) - (rank[b.status] || 9);
+        const rank: Record<string, number> = { "In Progress": 1, "Not Started": 2, "Completed": 3 };
+        return (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
       }
       if (sortBy === "due") return (a.dueDate || "9999").localeCompare(b.dueDate || "9999");
       if (sortBy === "category") return (a.category || "").localeCompare(b.category || "");
@@ -268,7 +267,7 @@ export default function TasksPage() {
                 tasks={filteredTasks}
                 categories={categories}
                 onOpenDetails={setActiveDrawerTask}
-                onAddTask={status => {
+                onAddTask={_status => {
                   setEditingTask(null);
                   setModalOpen(true);
                 }}

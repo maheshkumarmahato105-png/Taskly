@@ -5,7 +5,8 @@ import { LayoutGrid, Circle, Clock3, CheckCircle2, AlertTriangle } from "lucide-
 import type { DashboardSummary } from "@/types/task";
 
 interface SummaryGridProps {
-  summary: DashboardSummary;
+  // Allow extra fields (today, upcoming, etc.) spread in from page.tsx
+  summary: DashboardSummary & Record<string, unknown>;
 }
 
 export function SummaryGrid({ summary }: SummaryGridProps) {

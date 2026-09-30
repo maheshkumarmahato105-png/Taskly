@@ -6,7 +6,7 @@ import { UpcomingList } from "./UpcomingList";
 import { AlertCircle } from "lucide-react";
 
 interface InsightsProps {
-  summary: DashboardSummary;
+  summary: DashboardSummary & Record<string, unknown>;
   upcoming: UpcomingTask[];
   onTaskClick?: (task: UpcomingTask) => void;
   onViewAllUpcoming?: () => void;
