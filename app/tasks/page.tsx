@@ -12,6 +12,7 @@ import { FilterBar } from "@/components/tasks/FilterBar";
 import { api } from "@/lib/api";
 import {
   loadStoredTasks,
+  saveStoredTasks,
   loadStoredCategories,
   loadStoredStatuses,
 } from "@/lib/store";
@@ -23,7 +24,6 @@ export default function TasksPage() {
   const [statuses, setStatuses] = useState<Lookup[]>([]);
   const [categories, setCategories] = useState<Lookup[]>([]);
   const [loading, setLoading] = useState(true);
-  void loading; // consumed below once tasks have loaded
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [currentFilter, setCurrentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,7 +78,7 @@ export default function TasksPage() {
 
   const filteredTasks = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    let list = tasks.filter(t => {
+    const list = tasks.filter(t => {
       if (searchQuery) {
         const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority}`.toLowerCase();
         if (!str.includes(searchQuery.toLowerCase())) return false;
@@ -94,7 +94,7 @@ export default function TasksPage() {
       return true;
     });
 
-    list.sort((a, b) => {
+    return [...list].sort((a, b) => {
       if (sortBy === "priority") {
         const rank: Record<string, number> = { Urgent: 1, High: 2, Medium: 3, Low: 4 };
         return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
@@ -108,8 +108,6 @@ export default function TasksPage() {
       if (sortBy === "title") return a.title.localeCompare(b.title);
       return 0;
     });
-
-    return list;
   }, [tasks, currentFilter, searchQuery, sortBy]);
 
   function handleToggleSelect(id: string, e: React.MouseEvent) {
@@ -168,6 +166,17 @@ export default function TasksPage() {
     }
     setModalOpen(false);
     setEditingTask(null);
+  }
+
+  if (loading) {
+    return (
+      <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", color: "var(--muted)" }}>
+          <div style={{ fontSize: "32px", marginBottom: "12px" }}>⏳</div>
+          <p style={{ fontSize: "14px" }}>Loading tasks...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

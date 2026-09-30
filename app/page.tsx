@@ -14,21 +14,13 @@ import { FilterBar } from "@/components/tasks/FilterBar";
 import { api } from "@/lib/api";
 import {
   loadStoredTasks,
+  saveStoredTasks,
   loadStoredCategories,
   loadStoredStatuses,
   calculateSummary,
 } from "@/lib/store";
-import type { DashboardSummary, Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
+import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
 import { Plus } from "lucide-react";
-
-const initialSummary: DashboardSummary = {
-  totalTasks: 10,
-  notStarted: 4,
-  inProgress: 3,
-  completed: 3,
-  overdue: 1,
-  completionRate: 30,
-};
 
 const initialCategories: Lookup[] = [
   { id: "cat-work", name: "Work", color: "#6366F1" },
@@ -46,130 +38,17 @@ const initialStatuses: Lookup[] = [
   { id: "st-completed", code: "COMPLETED", name: "Completed", color: "#10B981" },
 ];
 
-function getDemoTasks(): Task[] {
-  const d = (offset: number) => {
-    const dt = new Date();
-    dt.setDate(dt.getDate() + offset);
-    return dt.toISOString().slice(0, 10);
-  };
-  return [
-    {
-      id: "10",
-      title: "Follow up on pending approval",
-      description: "Follow up on the pending approval and document the response for the team.",
-      status: "Not Started",
-      priority: "High",
-      dueDate: d(-1),
-      category: "Operations",
-      assignee: "Bishal",
-      checklists: [
-        { id: "c1", text: "Contact finance head", done: true },
-        { id: "c2", text: "Log response in CRM", done: false },
-      ],
-      comments: [
-        { id: "cm1", author: "Bishal", date: "Yesterday", text: "Awaiting final director sign-off." },
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "1",
-      title: "Finalize Taskly content plan",
-      description: "Finalize the content calendar, topics, and publishing schedule for the next campaign.",
-      status: "In Progress",
-      priority: "High",
-      dueDate: d(0),
-      category: "Marketing",
-      assignee: "Bishal",
-      checklists: [
-        { id: "c1", text: "Review SEO keywords", done: true },
-        { id: "c2", text: "Draft editorial calendar", done: true },
-        { id: "c3", text: "Review with design team", done: false },
-      ],
-      comments: [
-        { id: "cm1", author: "Anita", date: "Today", text: "Draft looks very promising." },
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      title: "Review student application documents",
-      description: "Verify all required academic and identity documents before submission.",
-      status: "Not Started",
-      priority: "Medium",
-      dueDate: d(0),
-      category: "Admissions",
-      assignee: "Priya",
-      checklists: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "3",
-      title: "Prepare tomorrow's team meeting",
-      description: "Prepare agenda, discussion points, metrics, and action items.",
-      status: "Completed",
-      priority: "High",
-      dueDate: d(0),
-      category: "Work",
-      assignee: "Bishal",
-      checklists: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "4",
-      title: "Update CRM lead tracking system",
-      description: "Add lead status rules, follow-up fields, and dashboard tracking improvements.",
-      status: "In Progress",
-      priority: "Medium",
-      dueDate: d(1),
-      category: "Operations",
-      assignee: "Anita",
-      checklists: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "5",
-      title: "Read 20 pages of learning material",
-      description: "Complete the selected chapter and note key takeaways.",
-      status: "Completed",
-      priority: "Low",
-      dueDate: d(1),
-      category: "Personal",
-      assignee: "Bishal",
-      checklists: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "6",
-      title: "Create social media content ideas",
-      description: "Draft 10 short-form content ideas for social media.",
-      status: "Not Started",
-      priority: "Medium",
-      dueDate: d(2),
-      category: "Marketing",
-      assignee: "Rahul",
-      checklists: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 export default function HomePage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<Lookup[]>(initialStatuses);
   const [categories, setCategories] = useState<Lookup[]>(initialCategories);
-  const [summary, setSummary] = useState<DashboardSummary>(initialSummary);
   const [upcoming, setUpcoming] = useState<UpcomingTask[]>([]);
 
   const [currentFilter, setCurrentFilter] = useState("all");
@@ -182,40 +61,49 @@ export default function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
+  // Load data — API first, localStorage fallback
   useEffect(() => {
     async function loadData() {
       try {
-        const [taskRes, summaryRes, upcomingRes, statusRes, catRes] = await Promise.all([
+        const [taskRes, upcomingRes, statusRes, catRes] = await Promise.all([
           api.tasks(),
-          api.summary(),
           api.upcoming(),
           api.statuses(),
           api.categories(),
         ]);
         setTasks(taskRes.items);
-        setSummary(summaryRes);
         setUpcoming(upcomingRes.items);
         setStatuses(statusRes.items);
         setCategories(catRes.items);
       } catch {
+        // Backend offline — use localStorage
         const storedTasks = loadStoredTasks();
         const storedCats = loadStoredCategories();
         const storedStatuses = loadStoredStatuses();
         setTasks(storedTasks);
         setCategories(storedCats);
         setStatuses(storedStatuses);
-        setSummary(calculateSummary(storedTasks));
         const today = new Date().toISOString().slice(0, 10);
         setUpcoming(
           storedTasks
             .filter(t => t.dueDate && t.dueDate >= today && t.status !== "Completed")
-            .slice(0, 3)
+            .slice(0, 4)
             .map(t => ({ id: t.id, title: t.title, status: t.status, category: t.category, dueDate: t.dueDate! }))
         );
       }
     }
     void loadData();
   }, []);
+
+  // Persist tasks to localStorage whenever they change
+  useEffect(() => {
+    if (tasks.length > 0) {
+      saveStoredTasks(tasks);
+    }
+  }, [tasks]);
+
+  // Derived summary — always in sync with real tasks list
+  const summary = useMemo(() => calculateSummary(tasks), [tasks]);
 
   const counts = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -232,7 +120,7 @@ export default function HomePage() {
 
   const filteredTasks = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    let list = tasks.filter(t => {
+    const list = tasks.filter(t => {
       if (searchQuery) {
         const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority}`.toLowerCase();
         if (!str.includes(searchQuery.toLowerCase())) return false;
@@ -248,7 +136,7 @@ export default function HomePage() {
       return true;
     });
 
-    list.sort((a, b) => {
+    return [...list].sort((a, b) => {
       if (sortBy === "priority") {
         const rank: Record<string, number> = { Urgent: 1, High: 2, Medium: 3, Low: 4 };
         return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
@@ -262,8 +150,6 @@ export default function HomePage() {
       if (sortBy === "title") return a.title.localeCompare(b.title);
       return 0;
     });
-
-    return list;
   }, [tasks, currentFilter, searchQuery, sortBy]);
 
   function handleToggleSelect(id: string, e: React.MouseEvent) {
@@ -285,17 +171,17 @@ export default function HomePage() {
   }
 
   function handleBulkStatus(status: TaskStatus) {
-    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status } : t));
+    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status, updatedAt: new Date().toISOString() } : t));
     setSelectedIds(new Set());
   }
 
   function handleBulkPriority(priority: TaskPriority) {
-    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, priority } : t));
+    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, priority, updatedAt: new Date().toISOString() } : t));
     setSelectedIds(new Set());
   }
 
   function handleBulkDelete() {
-    if (!confirm(`Delete ${selectedIds.size} selected tasks?`)) return;
+    if (!confirm(`Delete ${selectedIds.size} selected task${selectedIds.size > 1 ? "s" : ""}?`)) return;
     setTasks(prev => prev.filter(t => !selectedIds.has(t.id)));
     setSelectedIds(new Set());
   }
@@ -310,7 +196,12 @@ export default function HomePage() {
     assignee: string;
   }) {
     if (editingTask) {
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...payload, updatedAt: new Date().toISOString() } : t));
+      setTasks(prev =>
+        prev.map(t => t.id === editingTask.id
+          ? { ...t, ...payload, updatedAt: new Date().toISOString() }
+          : t
+        )
+      );
     } else {
       const newTask: Task = {
         id: String(Date.now()),
@@ -335,14 +226,14 @@ export default function HomePage() {
           <div className="hero">
             <div>
               <div className="hero-tag">TASK MANAGEMENT</div>
-              <h1 className="hero-title">Good evening, Bishal</h1>
+              <h1 className="hero-title">{getGreeting()}, Bishal 👋</h1>
               <p className="hero-desc">Plan your work, track progress, and keep every deadline visible across the team.</p>
             </div>
             <div className="hero-controls">
               <button
                 className="btn btn-secondary"
                 onClick={() => {
-                  if (confirm("Clear completed tasks?")) {
+                  if (confirm("Clear all completed tasks?")) {
                     setTasks(prev => prev.filter(t => t.status !== "Completed"));
                   }
                 }}
@@ -393,7 +284,9 @@ export default function HomePage() {
                 onFilterChange={setCurrentFilter}
                 onSearchChange={setSearchQuery}
                 onSortChange={setSortBy}
-                onSavedViewChange={view => setCurrentFilter(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")}
+                onSavedViewChange={view =>
+                  setCurrentFilter(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")
+                }
               />
 
               <BulkActions
@@ -423,10 +316,10 @@ export default function HomePage() {
                     }
                   }}
                   onChangeStatus={(task, status) => {
-                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status } : t));
+                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
                   }}
                   onChangePriority={(task, priority) => {
-                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, priority } : t));
+                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, priority, updatedAt: new Date().toISOString() } : t));
                   }}
                 />
               ) : (
@@ -439,7 +332,7 @@ export default function HomePage() {
                     setModalOpen(true);
                   }}
                   onMoveTask={(task, newStatus) => {
-                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t));
                   }}
                 />
               )}

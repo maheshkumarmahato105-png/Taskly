@@ -36,15 +36,15 @@ export function TaskTable({
     return cat?.color || "#64748B";
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+
   function isOverdue(task: Task) {
     if (task.status === "Completed" || !task.dueDate) return false;
-    const today = new Date().toISOString().slice(0, 10);
     return task.dueDate < today;
   }
 
   function formatDisplayDate(iso?: string | null) {
     if (!iso) return "No date";
-    const today = new Date().toISOString().slice(0, 10);
     if (iso === today) return "Today";
     const parts = iso.split("-");
     const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -139,7 +139,7 @@ export function TaskTable({
               </div>
 
               <div className="due-cell-col">
-                <div className={`due-pill ${task.dueDate === new Date().toISOString().slice(0, 10) ? "today" : ""} ${overdue ? "overdue" : ""}`}>
+                <div className={`due-pill ${task.dueDate === today ? "today" : ""} ${overdue ? "overdue" : ""}`}>
                   {overdue ? "Overdue" : formatDisplayDate(task.dueDate)}
                 </div>
               </div>

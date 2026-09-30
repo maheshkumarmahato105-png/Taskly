@@ -37,7 +37,9 @@ export function TaskModal({
   const [dueDate, setDueDate] = useState("");
   const [assignee, setAssignee] = useState("Bishal");
 
+  // Populate form when editing an existing task
   useEffect(() => {
+    if (!isOpen) return;
     if (editingTask) {
       setTitle(editingTask.title);
       setDescription(editingTask.description || "");
@@ -47,6 +49,7 @@ export function TaskModal({
       setDueDate(editingTask.dueDate || "");
       setAssignee(editingTask.assignee || "Bishal");
     } else {
+      // Reset to defaults for new task creation
       setTitle("");
       setDescription("");
       setStatus("Not Started");
@@ -55,7 +58,7 @@ export function TaskModal({
       setDueDate(new Date().toISOString().slice(0, 10));
       setAssignee("Bishal");
     }
-  }, [editingTask, categories, isOpen]);
+  }, [isOpen, editingTask]); // intentionally excludes categories to avoid resetting mid-session
 
   if (!isOpen) return null;
 
