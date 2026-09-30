@@ -21,6 +21,8 @@ import {
   loadStoredSettings,
   calculateSummary,
   addStoredAuditLog,
+  DEFAULT_CATEGORIES,
+  DEFAULT_STATUSES,
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
 import { Plus, Command } from "lucide-react";
@@ -34,10 +36,29 @@ function getGreeting(): string {
 }
 
 export default function HomePage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [statuses, setStatuses] = useState<Lookup[]>([]);
-  const [categories, setCategories] = useState<Lookup[]>([]);
-  const [upcoming, setUpcoming] = useState<UpcomingTask[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window !== "undefined") return loadStoredTasks();
+    return [];
+  });
+  const [statuses, setStatuses] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredStatuses();
+    return DEFAULT_STATUSES;
+  });
+  const [categories, setCategories] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredCategories();
+    return DEFAULT_CATEGORIES;
+  });
+  const [upcoming, setUpcoming] = useState<UpcomingTask[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = loadStoredTasks();
+      const today = new Date().toISOString().slice(0, 10);
+      return stored
+        .filter(t => t.dueDate && t.dueDate >= today && t.status !== "Completed")
+        .slice(0, 4)
+        .map(t => ({ id: t.id, title: t.title, status: t.status, category: t.category, dueDate: t.dueDate! }));
+    }
+    return [];
+  });
 
   const [currentFilter, setCurrentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,7 +74,7 @@ export default function HomePage() {
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Load data — API first, localStorage fallback
+  // Background refresh — if backend is available, sync updates quietly without UI flicker
   useEffect(() => {
     async function loadData() {
       try {
@@ -63,24 +84,12 @@ export default function HomePage() {
           api.statuses(),
           api.categories(),
         ]);
-        setTasks(taskRes.items);
-        setUpcoming(upcomingRes.items);
-        setStatuses(statusRes.items);
-        setCategories(catRes.items);
+        if (taskRes?.items?.length) setTasks(taskRes.items);
+        if (upcomingRes?.items?.length) setUpcoming(upcomingRes.items);
+        if (statusRes?.items?.length) setStatuses(statusRes.items);
+        if (catRes?.items?.length) setCategories(catRes.items);
       } catch {
-        const storedTasks = loadStoredTasks();
-        const storedCats = loadStoredCategories();
-        const storedStatuses = loadStoredStatuses();
-        setTasks(storedTasks);
-        setCategories(storedCats);
-        setStatuses(storedStatuses);
-        const today = new Date().toISOString().slice(0, 10);
-        setUpcoming(
-          storedTasks
-            .filter(t => t.dueDate && t.dueDate >= today && t.status !== "Completed")
-            .slice(0, 4)
-            .map(t => ({ id: t.id, title: t.title, status: t.status, category: t.category, dueDate: t.dueDate! }))
-        );
+        // Data already loaded synchronously from localStorage on mount.
       }
     }
     void loadData();

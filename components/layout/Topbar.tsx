@@ -48,7 +48,7 @@ export function Topbar({
   return (
     <header className="topbar">
       <div className="breadcrumbs">
-        <Link href="/" className="topbar-brand-link" title="EasyMyLearning Workspace">
+        <Link href="/" prefetch={true} className="topbar-brand-link" title="EasyMyLearning Workspace">
           <BrandMark size={26} glow={false} />
           <span className="topbar-brand-text">
             <span>EasyMy</span>

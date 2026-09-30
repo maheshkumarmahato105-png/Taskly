@@ -15,7 +15,10 @@ import {
 import type { Lookup } from "@/types/task";
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Lookup[]>([]);
+  const [categories, setCategories] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredCategories();
+    return [];
+  });
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   useEffect(() => {

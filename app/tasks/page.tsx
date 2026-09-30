@@ -17,16 +17,27 @@ import {
   loadStoredCategories,
   loadStoredStatuses,
   addStoredAuditLog,
+  DEFAULT_CATEGORIES,
+  DEFAULT_STATUSES,
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
 import { Plus, Command } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [statuses, setStatuses] = useState<Lookup[]>([]);
-  const [categories, setCategories] = useState<Lookup[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window !== "undefined") return loadStoredTasks();
+    return [];
+  });
+  const [statuses, setStatuses] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredStatuses();
+    return DEFAULT_STATUSES;
+  });
+  const [categories, setCategories] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredCategories();
+    return DEFAULT_CATEGORIES;
+  });
+  const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [currentFilter, setCurrentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,14 +58,11 @@ export default function TasksPage() {
           api.statuses(),
           api.categories(),
         ]);
-        setTasks(taskRes.items);
-        setStatuses(statusRes.items);
-        setCategories(catRes.items);
+        if (taskRes?.items?.length) setTasks(taskRes.items);
+        if (statusRes?.items?.length) setStatuses(statusRes.items);
+        if (catRes?.items?.length) setCategories(catRes.items);
       } catch (e) {
-        console.warn("Using offline fallback data", e);
-        setTasks(loadStoredTasks());
-        setStatuses(loadStoredStatuses());
-        setCategories(loadStoredCategories());
+        // Data already loaded synchronously from localStorage on mount.
       } finally {
         setLoading(false);
       }
@@ -320,17 +328,6 @@ export default function TasksPage() {
     }
     setModalOpen(false);
     setEditingTask(null);
-  }
-
-  if (loading) {
-    return (
-      <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-        <div style={{ textAlign: "center", color: "var(--muted)" }}>
-          <div style={{ fontSize: "32px", marginBottom: "12px" }}>⏳</div>
-          <p style={{ fontSize: "14px" }}>Loading EasyMyLearning tasks...</p>
-        </div>
-      </div>
-    );
   }
 
   return (

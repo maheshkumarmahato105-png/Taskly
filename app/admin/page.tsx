@@ -40,21 +40,42 @@ import type {
 } from "@/types/task";
 
 export default function AdminPage() {
-  const [categories, setCategories] = useState<Lookup[]>([]);
-  const [statuses, setStatuses] = useState<Lookup[]>([]);
-  const [users, setUsers] = useState<UserAccount[]>([]);
-  const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
-  const [widgets, setWidgets] = useState<DashboardWidgetConfig[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
+  const [categories, setCategories] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredCategories();
+    return [];
+  });
+  const [statuses, setStatuses] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredStatuses();
+    return [];
+  });
+  const [users, setUsers] = useState<UserAccount[]>(() => {
+    if (typeof window !== "undefined") return loadStoredUsers();
+    return [];
+  });
+  const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>(() => {
+    if (typeof window !== "undefined") return loadStoredCustomFields();
+    return [];
+  });
+  const [widgets, setWidgets] = useState<DashboardWidgetConfig[]>(() => {
+    if (typeof window !== "undefined") return loadStoredWidgets();
+    return [];
+  });
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>(() => {
+    if (typeof window !== "undefined") return loadStoredAuditLogs();
+    return [];
+  });
   const [activeTab, setActiveTab] = useState<"categories" | "statuses" | "fields" | "widgets" | "branding" | "users" | "audit">("categories");
-  const [settings, setSettings] = useState<SystemSettingsType>({
-    appName: "EasyMyLearning",
-    brandColor: "#FFAA00",
-    theme: "light",
-    defaultView: "list",
-    auditEnabled: true,
-    companyName: "EasyMyLearning Inc.",
-    supportEmail: "support@easymylearning.com",
+  const [settings, setSettings] = useState<SystemSettingsType>(() => {
+    if (typeof window !== "undefined") return loadStoredSettings();
+    return {
+      appName: "EasyMyLearning",
+      brandColor: "#FFAA00",
+      theme: "light",
+      defaultView: "list",
+      auditEnabled: true,
+      companyName: "EasyMyLearning Inc.",
+      supportEmail: "support@easymylearning.com",
+    };
   });
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 

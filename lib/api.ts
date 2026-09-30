@@ -13,22 +13,50 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+let isBackendOffline = false;
+let lastOfflineCheck = 0;
+const OFFLINE_RETRY_MS = 20000;
 
-  if (!response.ok) {
-    throw new Error(`API error ${response.status}: ${response.statusText}`);
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  if (typeof window !== "undefined") {
+    if (window.location.protocol === "https:" && API_BASE.startsWith("http://localhost")) {
+      throw new Error("Mixed content skipped on HTTPS");
+    }
+    const now = Date.now();
+    if (isBackendOffline && now - lastOfflineCheck < OFFLINE_RETRY_MS) {
+      throw new Error("Backend offline; using local data");
+    }
   }
 
-  return response.json();
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 500);
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: init?.signal ?? controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error ${response.status}: ${response.statusText}`);
+    }
+
+    isBackendOffline = false;
+    return await response.json();
+  } catch (err) {
+    if (typeof window !== "undefined") {
+      isBackendOffline = true;
+      lastOfflineCheck = Date.now();
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export const api = {

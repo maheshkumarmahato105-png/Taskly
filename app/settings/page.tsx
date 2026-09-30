@@ -15,15 +15,21 @@ import {
 import type { Lookup, SystemSettings } from "@/types/task";
 
 export default function SettingsPage() {
-  const [categories, setCategories] = useState<Lookup[]>([]);
-  const [settings, setSettings] = useState<SystemSettings>({
-    appName: "EasyMyLearning",
-    brandColor: "#FFAA00",
-    theme: "light",
-    defaultView: "list",
-    auditEnabled: true,
-    companyName: "EasyMyLearning Inc.",
-    supportEmail: "support@easymylearning.com",
+  const [categories, setCategories] = useState<Lookup[]>(() => {
+    if (typeof window !== "undefined") return loadStoredCategories();
+    return [];
+  });
+  const [settings, setSettings] = useState<SystemSettings>(() => {
+    if (typeof window !== "undefined") return loadStoredSettings();
+    return {
+      appName: "EasyMyLearning",
+      brandColor: "#FFAA00",
+      theme: "light",
+      defaultView: "list",
+      auditEnabled: true,
+      companyName: "EasyMyLearning Inc.",
+      supportEmail: "support@easymylearning.com",
+    };
   });
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);

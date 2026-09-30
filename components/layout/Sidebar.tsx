@@ -72,30 +72,47 @@ export function Sidebar({
   const isCompletedActive = pathname === "/tasks" && currentFilter === "completed";
   const isOverdueActive = pathname === "/tasks" && currentFilter === "overdue";
 
+  const handleDashboardClick = (e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) return;
+    if (pathname === "/") {
+      e.preventDefault();
+      onSelectCategory?.("");
+      onFilterChange?.("all");
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.search = "";
+        window.history.pushState({}, "", url.pathname);
+      }
+    }
+  };
+
   const handleFilterClick = (e: React.MouseEvent, filterKey: string) => {
     if (e.ctrlKey || e.metaKey) return;
-    e.preventDefault();
     if (pathname === "/tasks") {
+      e.preventDefault();
       onFilterChange?.(filterKey);
+      if (filterKey === "all") {
+        onSelectCategory?.("");
+      }
       if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
         if (filterKey === "all") {
           url.searchParams.delete("filter");
+          url.searchParams.delete("category");
         } else {
           url.searchParams.set("filter", filterKey);
         }
         window.history.pushState({}, "", url.toString());
       }
-    } else {
-      router.push(filterKey === "all" ? "/tasks" : `/tasks?filter=${filterKey}`);
     }
+    // If not currently on /tasks, default <Link prefetch={true}> navigates natively without reload
   };
 
   return (
     <aside className="sidebar">
       {/* Desktop & Tablet Sidebar View */}
       <div className="sidebar-desktop-content">
-        <Link href="/" className="brand" title="EasyMyLearning — Task Manager">
+        <Link href="/" prefetch={true} onClick={handleDashboardClick} className="brand" title="EasyMyLearning — Task Manager">
           <BrandLogo brandName={brandName} subTitle="Task Manager" badge="ENTERPRISE" />
         </Link>
 
@@ -103,7 +120,13 @@ export function Sidebar({
         <div className="nav-group">
           <div className="nav-label">Workspace</div>
           <nav className="nav-list">
-            <Link href="/" className={`nav-item ${isDashboardActive ? "active" : ""}`} title="Overview Dashboard">
+            <Link
+              href="/"
+              prefetch={true}
+              onClick={handleDashboardClick}
+              className={`nav-item ${isDashboardActive ? "active" : ""}`}
+              title="Overview Dashboard"
+            >
               <span className="nav-icon"><LayoutGrid size={17} /></span>
               <span className="nav-title">Dashboard</span>
               <span className="nav-badge">{counts.total}</span>
@@ -111,6 +134,7 @@ export function Sidebar({
 
             <Link
               href="/tasks"
+              prefetch={true}
               onClick={e => handleFilterClick(e, "all")}
               className={`nav-item ${isAllTasksActive ? "active" : ""}`}
               title="Show all tasks"
@@ -121,6 +145,7 @@ export function Sidebar({
 
             <Link
               href="/tasks?filter=today"
+              prefetch={true}
               onClick={e => handleFilterClick(e, "today")}
               className={`nav-item ${isTodayActive ? "active" : ""}`}
               title="Show only tasks due today"
@@ -132,6 +157,7 @@ export function Sidebar({
 
             <Link
               href="/tasks?filter=upcoming"
+              prefetch={true}
               onClick={e => handleFilterClick(e, "upcoming")}
               className={`nav-item ${isUpcomingActive ? "active" : ""}`}
               title="Show only upcoming tasks"
@@ -143,6 +169,7 @@ export function Sidebar({
 
             <Link
               href="/tasks?filter=completed"
+              prefetch={true}
               onClick={e => handleFilterClick(e, "completed")}
               className={`nav-item ${isCompletedActive ? "active" : ""}`}
               title="Show only completed tasks"
@@ -154,6 +181,7 @@ export function Sidebar({
 
             <Link
               href="/tasks?filter=overdue"
+              prefetch={true}
               onClick={e => handleFilterClick(e, "overdue")}
               className={`nav-item ${isOverdueActive ? "active" : ""}`}
               title="Show only overdue tasks"
@@ -260,12 +288,24 @@ export function Sidebar({
 
       {/* Mobile Dedicated Bottom Navigation Bar */}
       <nav className="sidebar-mobile-nav" aria-label="Mobile Navigation">
-        <Link href="/" className={`mobile-nav-item ${isNavActive("/") ? "active" : ""}`} title="Dashboard">
+        <Link
+          href="/"
+          prefetch={true}
+          onClick={handleDashboardClick}
+          className={`mobile-nav-item ${isNavActive("/") ? "active" : ""}`}
+          title="Dashboard"
+        >
           <div className="mobile-nav-icon"><LayoutGrid size={18} /></div>
           <span className="mobile-nav-text">Home</span>
         </Link>
 
-        <Link href="/tasks" className={`mobile-nav-item ${isNavActive("/tasks") ? "active" : ""}`} title="All Tasks">
+        <Link
+          href="/tasks"
+          prefetch={true}
+          onClick={e => handleFilterClick(e, "all")}
+          className={`mobile-nav-item ${isNavActive("/tasks") ? "active" : ""}`}
+          title="All Tasks"
+        >
           <div className="mobile-nav-icon" style={{ position: "relative" }}>
             <ListChecks size={18} />
             {counts.total > 0 && <span className="mobile-badge-dot">{counts.total}</span>}
