@@ -1,6 +1,5 @@
-"use client";
-
 import React, { useState } from "react";
+import { BrandLogo, BrandMark } from "@/components/ui/BrandLogo";
 import type { SystemSettings as SystemSettingsType } from "@/types/task";
 
 interface SystemSettingsProps {
@@ -9,7 +8,7 @@ interface SystemSettingsProps {
 }
 
 export function SystemSettings({ settings, onSave }: SystemSettingsProps) {
-  const [appName, setAppName] = useState(settings.appName || "Taskly");
+  const [appName, setAppName] = useState(settings.appName || "EasyMyLearning");
   const [brandColor, setBrandColor] = useState(settings.brandColor || "#FFAA00");
   const [defaultView, setDefaultView] = useState<"list" | "kanban">(settings.defaultView || "list");
   const [auditEnabled, setAuditEnabled] = useState(settings.auditEnabled ?? true);
@@ -28,6 +27,22 @@ export function SystemSettings({ settings, onSave }: SystemSettingsProps) {
     <div className="settings-card">
       <div className="settings-section">
         <div className="settings-section-title">Brand Appearance & Identity</div>
+
+        <div className="settings-row" style={{ alignItems: "flex-start" }}>
+          <div className="settings-row-text">
+            <strong>Brand Logo & Mark Preview</strong>
+            <p>Official graduation cap + task completion vector mark for desktop & mobile.</p>
+          </div>
+          <div style={{ background: "#0F172A", padding: "14px 18px", borderRadius: "12px", border: "1px solid #1E293B", display: "flex", flexDirection: "column", gap: "10px", minWidth: "260px" }}>
+            <BrandLogo brandName={appName} subTitle="Task Manager" badge="ENTERPRISE" />
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", borderTop: "1px solid #1E293B", paddingTop: "8px" }}>
+              <span style={{ fontSize: "10px", color: "#64748B" }}>Icon Mark:</span>
+              <BrandMark size={26} />
+              <span style={{ fontSize: "10px", color: "#64748B", marginLeft: "auto" }}>SVG & Retina Ready</span>
+            </div>
+          </div>
+        </div>
+
         <div className="settings-row">
           <div className="settings-row-text">
             <strong>Platform Name</strong>

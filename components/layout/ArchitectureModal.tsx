@@ -2,6 +2,7 @@
 
 import React from "react";
 import { X, CheckCircle, Server, Database, Globe, Shield, Terminal, Layers } from "lucide-react";
+import { BrandMark } from "@/components/ui/BrandLogo";
 
 interface ArchitectureModalProps {
   isOpen: boolean;
@@ -18,18 +19,21 @@ export function ArchitectureModal({ isOpen, onClose }: ArchitectureModalProps) {
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: "800px", width: "92%", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
       >
-        <div className="modal-header" style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", color: "#fff" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ background: "#FFAA00", color: "#1E293B", padding: "2px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: 900 }}>
-                ARCHITECTURE & DEPLOYMENT PLAN
-              </span>
-              <span style={{ fontSize: "11px", color: "#94A3B8" }}>EasyMyLearning Task Manager</span>
+        <div className="modal-header" style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <BrandMark size={40} glow />
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ background: "#FFAA00", color: "#1E293B", padding: "2px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: 900 }}>
+                  ARCHITECTURE & DEPLOYMENT PLAN
+                </span>
+                <span style={{ fontSize: "11px", color: "#94A3B8" }}>EasyMyLearning Task Manager</span>
+              </div>
+              <h2 style={{ color: "#fff", fontSize: "18px", marginTop: "4px" }}>Full-Stack System Architecture</h2>
+              <p style={{ color: "#94A3B8", fontSize: "11px" }}>
+                Next.js + React frontend | Go backend | PostgreSQL | Docker | REST API
+              </p>
             </div>
-            <h2 style={{ color: "#fff", fontSize: "18px", marginTop: "6px" }}>Full-Stack System Architecture</h2>
-            <p style={{ color: "#94A3B8", fontSize: "11px" }}>
-              Next.js + React frontend | Go backend | PostgreSQL | Docker | REST API
-            </p>
           </div>
           <button className="drawer-close-btn" onClick={onClose} style={{ color: "#fff" }}>
             <X size={18} />

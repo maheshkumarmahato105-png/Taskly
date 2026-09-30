@@ -14,6 +14,7 @@ import {
   Layers,
   FileCode2,
 } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import type { Lookup } from "@/types/task";
 
 interface SidebarProps {
@@ -45,19 +46,8 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      <Link href="/" className="brand">
-        <div className="brand-mark" style={{ background: "linear-gradient(135deg, #FFAA00 0%, #E68A00 100%)", color: "#1E293B" }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M4 12l5 5L20 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <div className="brand-info">
-          <span className="brand-name" style={{ color: "#F8FAFC", fontWeight: 900 }}>{brandName}</span>
-          <span className="brand-sub" style={{ color: "#FFAA00", fontWeight: 700 }}>Task Manager</span>
-        </div>
-        <span className="brand-badge" style={{ background: "rgba(255, 170, 0, 0.15)", color: "#FFD36B", borderColor: "rgba(255, 170, 0, 0.3)" }}>
-          ENTERPRISE
-        </span>
+      <Link href="/" className="brand" title="EasyMyLearning — Task Manager">
+        <BrandLogo brandName={brandName} subTitle="Task Manager" badge="ENTERPRISE" />
       </Link>
 
       {/* Workspace */}

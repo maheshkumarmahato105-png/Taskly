@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Bell, Search, HelpCircle, ChevronDown, Check, FileText } from "lucide-react";
+import { BrandMark } from "@/components/ui/BrandLogo";
 import { loadStoredNotifications, saveStoredNotifications } from "@/lib/store";
 import type { InAppNotification } from "@/types/task";
 
@@ -48,8 +50,14 @@ export function Topbar({
   return (
     <header className="topbar">
       <div className="breadcrumbs">
-        <span>EasyMyLearning</span>
-        <span>/</span>
+        <Link href="/" className="topbar-brand-link" title="EasyMyLearning Workspace">
+          <BrandMark size={26} glow={false} />
+          <span className="topbar-brand-text">
+            <span>EasyMy</span>
+            <span style={{ color: "#FFAA00" }}>Learning</span>
+          </span>
+        </Link>
+        <span className="crumb-sep">/</span>
         <strong>{breadcrumbTitle}</strong>
       </div>
 

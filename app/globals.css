@@ -73,15 +73,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* Brand */
 .brand {
   display: flex; align-items: center; gap: 10px;
-  padding: 4px 8px; margin-bottom: 26px; border-radius: 10px;
-  transition: background 0.15s;
+  padding: 6px 8px; margin-bottom: 24px; border-radius: 10px;
+  transition: background 0.15s, transform 0.15s;
+  text-decoration: none;
 }
-.brand:hover { background: rgba(255, 255, 255, 0.04); }
+.brand:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.brand:hover .brand-mark-wrapper svg {
+  transform: scale(1.05);
+  filter: drop-shadow(0 6px 16px rgba(255, 170, 0, 0.45));
+}
 
 .brand-mark {
   width: 36px; height: 36px; display: grid; place-items: center;
   border-radius: 10px; background: linear-gradient(145deg, #FFAA00, #F59E0B);
   color: #1F2937; box-shadow: 0 8px 20px rgba(255, 170, 0, 0.22); flex-shrink: 0;
+}
+.brand-mark-wrapper {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .brand-info { display: flex; flex-direction: column; min-width: 0; }
 .brand-name { color: #fff; font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
@@ -90,6 +100,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   margin-left: auto; color: #FFD77A; font-size: 8px; font-weight: 900;
   letter-spacing: 0.8px; background: #2A3020; padding: 2px 6px;
   border-radius: 4px; flex-shrink: 0;
+}
+
+.topbar-brand-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  text-decoration: none; color: inherit; margin-right: 4px;
+}
+.topbar-brand-link:hover .brand-mark-wrapper svg {
+  transform: scale(1.08);
+}
+.topbar-brand-text {
+  font-weight: 800; font-size: 13px; color: var(--ink);
+  letter-spacing: -0.2px;
+}
+.crumb-sep {
+  color: #CBD5E1; font-weight: 400; margin: 0 2px;
 }
 
 /* Nav Group */
