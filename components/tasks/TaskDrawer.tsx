@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import type { Lookup, Task, TaskPriority, TaskStatus, TaskAttachment } from "@/types/task";
 import { X, Check, Paperclip, Plus, Trash2, Calendar, Hash, Clock } from "lucide-react";
+import { toast } from "@/components/ui/Toast";
 
 interface TaskDrawerProps {
   task: Task | null;
@@ -31,39 +32,59 @@ export function TaskDrawer({
 
   if (!isOpen || !task) return null;
 
-  function updateField<K extends keyof Task>(field: K, value: Task[K]) {
+  function updateField<K extends keyof Task>(field: K, value: Task[K], notify = false) {
     if (!task) return;
     const updated = { ...task, [field]: value, updatedAt: new Date().toISOString() };
     onUpdate(updated);
+    if (notify) {
+      const fieldNames: Record<string, string> = {
+        title: "Title",
+        description: "Description",
+        status: "Status",
+        priority: "Priority",
+        category: "Category",
+        dueDate: "Due Date",
+        assignee: "Assignee",
+      };
+      const label = fieldNames[field as string] || String(field);
+      toast.success(`${label} Updated`, `Changed to ${String(value)}`);
+    }
   }
 
   function updateCustomField(key: string, value: string) {
     if (!task) return;
     const currentCustom = task.customFields ? { ...task.customFields } : {};
     currentCustom[key] = value;
-    updateField("customFields", currentCustom);
+    updateField("customFields", currentCustom, false);
+    toast.success("Field Updated", `${key.replace(/_/g, " ")} saved`);
   }
 
   function handleAddChecklist() {
     if (!newChecklistText.trim() || !task) return;
+    const itemText = newChecklistText.trim();
     const lists = task.checklists ? [...task.checklists] : [];
-    lists.push({ id: "c" + Date.now(), text: newChecklistText.trim(), done: false });
-    updateField("checklists", lists);
+    lists.push({ id: "c" + Date.now(), text: itemText, done: false });
+    updateField("checklists", lists, false);
     setNewChecklistText("");
+    toast.success("Checklist Added", `'${itemText}' added to steps`);
   }
 
   function handleToggleChecklist(index: number) {
     if (!task || !task.checklists) return;
     const lists = [...task.checklists];
-    lists[index] = { ...lists[index], done: !lists[index].done };
-    updateField("checklists", lists);
+    const isDone = !lists[index].done;
+    lists[index] = { ...lists[index], done: isDone };
+    updateField("checklists", lists, false);
+    toast.success(isDone ? "Step Completed" : "Step Reopened", `'${lists[index].text}'`);
   }
 
   function handleDeleteChecklist(index: number) {
     if (!task || !task.checklists) return;
     const lists = [...task.checklists];
+    const removedText = lists[index]?.text || "Step";
     lists.splice(index, 1);
-    updateField("checklists", lists);
+    updateField("checklists", lists, false);
+    toast.info("Checklist Removed", `'${removedText}' deleted`);
   }
 
   function handleAddComment() {
@@ -75,23 +96,26 @@ export function TaskDrawer({
       date: "Just now",
       text: newCommentText.trim(),
     });
-    updateField("comments", comments);
+    updateField("comments", comments, false);
     setNewCommentText("");
+    toast.success("Comment Posted", "Your discussion note has been added");
   }
 
   function handleAddAttachment() {
     if (!newAttachmentName.trim() || !task) return;
+    const name = newAttachmentName.trim();
     const attachments = task.attachments ? [...task.attachments] : [];
     attachments.push({
       id: "att-" + Date.now(),
-      name: newAttachmentName.trim(),
+      name,
       size: "1.2 MB",
       type: "application/pdf",
       uploadedAt: "Just now",
     });
-    updateField("attachments", attachments);
+    updateField("attachments", attachments, false);
     setNewAttachmentName("");
     setShowAttachInput(false);
+    toast.success("Attachment Uploaded", `'${name}' attached to task`);
   }
 
   const checklistTotal = task.checklists?.length || 0;
@@ -121,6 +145,7 @@ export function TaskDrawer({
               className="form-input"
               value={task.title}
               onChange={e => updateField("title", e.target.value)}
+              onBlur={e => e.target.value.trim() && toast.success("Title Saved", `'${e.target.value}' saved`)}
             />
           </div>
 
@@ -130,7 +155,7 @@ export function TaskDrawer({
               <select
                 className="drawer-field-select"
                 value={task.status}
-                onChange={e => updateField("status", e.target.value as TaskStatus)}
+                onChange={e => updateField("status", e.target.value as TaskStatus, true)}
               >
                 {statuses.map(s => (
                   <option key={s.id} value={s.name}>{s.name}</option>
@@ -143,7 +168,7 @@ export function TaskDrawer({
               <select
                 className="drawer-field-select"
                 value={task.priority}
-                onChange={e => updateField("priority", e.target.value as TaskPriority)}
+                onChange={e => updateField("priority", e.target.value as TaskPriority, true)}
               >
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -157,7 +182,7 @@ export function TaskDrawer({
               <select
                 className="drawer-field-select"
                 value={task.category}
-                onChange={e => updateField("category", e.target.value)}
+                onChange={e => updateField("category", e.target.value, true)}
               >
                 {categories.map(c => (
                   <option key={c.id} value={c.name}>{c.name}</option>
@@ -171,7 +196,7 @@ export function TaskDrawer({
                 type="date"
                 className="drawer-field-input"
                 value={task.dueDate || ""}
-                onChange={e => updateField("dueDate", e.target.value || null)}
+                onChange={e => updateField("dueDate", e.target.value || null, true)}
               />
             </div>
           </div>
@@ -182,7 +207,7 @@ export function TaskDrawer({
               <select
                 className="drawer-field-select"
                 value={task.assignee || "Bishal"}
-                onChange={e => updateField("assignee", e.target.value)}
+                onChange={e => updateField("assignee", e.target.value, true)}
               >
                 <option value="Bishal">Bishal (Lead Admin)</option>
                 <option value="Anita">Anita (Full-Stack Dev)</option>
@@ -226,6 +251,7 @@ export function TaskDrawer({
               value={task.description || ""}
               placeholder="Add detailed task scope or specifications..."
               onChange={e => updateField("description", e.target.value)}
+              onBlur={() => toast.success("Description Saved", "Task description updated")}
             />
           </div>
 

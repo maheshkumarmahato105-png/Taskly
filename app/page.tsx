@@ -25,6 +25,7 @@ import {
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
 import { Plus, FileText, Command } from "lucide-react";
+import { toast } from "@/components/ui/Toast";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -199,21 +200,27 @@ export default function HomePage() {
   }
 
   function handleBulkStatus(status: TaskStatus) {
+    const count = selectedIds.size;
     setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status, updatedAt: new Date().toISOString() } : t));
-    addStoredAuditLog("Bulk Status Update", `Updated ${selectedIds.size} tasks to ${status}`);
+    addStoredAuditLog("Bulk Status Update", `Updated ${count} tasks to ${status}`);
+    toast.success("Bulk Status Updated", `Updated ${count} task${count > 1 ? "s" : ""} to ${status}`);
     setSelectedIds(new Set());
   }
 
   function handleBulkPriority(priority: TaskPriority) {
+    const count = selectedIds.size;
     setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, priority, updatedAt: new Date().toISOString() } : t));
-    addStoredAuditLog("Bulk Priority Update", `Updated ${selectedIds.size} tasks to ${priority}`);
+    addStoredAuditLog("Bulk Priority Update", `Updated ${count} tasks to ${priority}`);
+    toast.success("Bulk Priority Updated", `Updated ${count} task${count > 1 ? "s" : ""} to ${priority}`);
     setSelectedIds(new Set());
   }
 
   function handleBulkDelete() {
-    if (!confirm(`Delete ${selectedIds.size} selected task${selectedIds.size > 1 ? "s" : ""}?`)) return;
+    const count = selectedIds.size;
+    if (!confirm(`Delete ${count} selected task${count > 1 ? "s" : ""}?`)) return;
     setTasks(prev => prev.filter(t => !selectedIds.has(t.id)));
-    addStoredAuditLog("Bulk Task Deletion", `Removed ${selectedIds.size} tasks`);
+    addStoredAuditLog("Bulk Task Deletion", `Removed ${count} tasks`);
+    toast.info("Bulk Tasks Deleted", `Removed ${count} task${count > 1 ? "s" : ""}`);
     setSelectedIds(new Set());
   }
 
@@ -235,6 +242,7 @@ export default function HomePage() {
         )
       );
       addStoredAuditLog("Task Updated", `Updated '${payload.title}' (${payload.status})`);
+      toast.success("Task Updated", `'${payload.title}' was successfully updated`);
     } else {
       const newTask: Task = {
         id: String(Date.now()),
@@ -251,6 +259,7 @@ export default function HomePage() {
       };
       setTasks(prev => [newTask, ...prev]);
       addStoredAuditLog("Task Created", `Created '${payload.title}' in ${payload.category}`);
+      toast.success("Task Created", `'${payload.title}' created in ${payload.category}`);
     }
     setModalOpen(false);
     setEditingTask(null);
@@ -371,15 +380,18 @@ export default function HomePage() {
                     if (confirm(`Delete "${task.title}"?`)) {
                       setTasks(prev => prev.filter(t => t.id !== task.id));
                       addStoredAuditLog("Task Deleted", `Deleted '${task.title}'`);
+                      toast.info("Task Deleted", `'${task.title}' was deleted`);
                     }
                   }}
                   onChangeStatus={(task, status) => {
                     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
                     addStoredAuditLog("Status Changed", `'${task.title}' moved to ${status}`);
+                    toast.success("Status Updated", `'${task.title}' moved to ${status}`);
                   }}
                   onChangePriority={(task, priority) => {
                     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, priority, updatedAt: new Date().toISOString() } : t));
                     addStoredAuditLog("Priority Changed", `'${task.title}' priority set to ${priority}`);
+                    toast.success("Priority Updated", `'${task.title}' priority set to ${priority}`);
                   }}
                 />
               ) : (
@@ -394,6 +406,7 @@ export default function HomePage() {
                   onMoveTask={(task, newStatus) => {
                     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t));
                     addStoredAuditLog("Status Transition", `'${task.title}' moved to ${newStatus}`);
+                    toast.success("Status Transition", `'${task.title}' moved to ${newStatus}`);
                   }}
                 />
               )}
@@ -421,10 +434,12 @@ export default function HomePage() {
         onUpdate={updated => {
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
           setActiveDrawerTask(updated);
+          toast.success("Task Saved", `'${updated.title}' saved`);
         }}
         onDelete={task => {
           setTasks(prev => prev.filter(t => t.id !== task.id));
           setActiveDrawerTask(null);
+          toast.info("Task Deleted", `'${task.title}' deleted`);
         }}
       />
 

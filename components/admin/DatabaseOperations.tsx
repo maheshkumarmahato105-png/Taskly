@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Download, Upload, RotateCcw, Database, CheckCircle2 } from "lucide-react";
 import { exportBackupJson, importBackupJson, getInitialTasks, saveStoredTasks } from "@/lib/store";
+import { toast } from "@/components/ui/Toast";
 
 export function DatabaseOperations() {
   const [copied, setCopied] = useState(false);
@@ -18,12 +19,14 @@ export function DatabaseOperations() {
     a.click();
     URL.revokeObjectURL(url);
     setStatusMsg("Database state exported successfully!");
+    toast.success("Database Backup Exported", "Snapshot downloaded as JSON file");
   }
 
   function handleResetSeed() {
     if (!confirm("Reset database state to original seed data (PDF Page 11)?")) return;
     saveStoredTasks(getInitialTasks());
     setStatusMsg("Database reset to demo seed data. Please refresh to view.");
+    toast.info("Database Reset", "Seed data restored to defaults");
     window.location.reload();
   }
 

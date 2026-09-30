@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
+import { toast } from "@/components/ui/Toast";
 import {
   loadStoredCategories,
   loadStoredSettings,
@@ -41,6 +42,7 @@ export default function SettingsPage() {
     saveStoredSettings(settings);
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 2500);
+    toast.success("Preferences Saved", "Your workspace settings have been updated successfully");
   }
 
   return (

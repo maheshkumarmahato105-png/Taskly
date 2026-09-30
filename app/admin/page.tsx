@@ -12,6 +12,7 @@ import { RolesManager } from "@/components/admin/RolesManager";
 import { DatabaseOperations } from "@/components/admin/DatabaseOperations";
 import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
+import { toast } from "@/components/ui/Toast";
 import {
   loadStoredCategories,
   saveStoredCategories,
@@ -74,42 +75,53 @@ export default function AdminPage() {
     const updated = [...categories, { id: "cat-" + Date.now(), ...newCat }];
     setCategories(updated);
     saveStoredCategories(updated);
+    toast.success("Category Added", `'${newCat.name}' has been created`);
   }
 
   function handleDeleteCategory(id: string) {
+    const cat = categories.find(c => c.id === id);
     const updated = categories.filter(c => c.id !== id);
     setCategories(updated);
     saveStoredCategories(updated);
+    toast.info("Category Deleted", cat ? `'${cat.name}' removed` : "Category removed");
   }
 
   function handleAddCustomField(field: Omit<CustomFieldDefinition, "id">) {
     const updated = [...customFields, { id: "cf-" + Date.now(), ...field }];
     setCustomFields(updated);
     saveStoredCustomFields(updated);
+    toast.success("Custom Field Created", `'${field.name}' dynamic field added`);
   }
 
   function handleDeleteCustomField(id: string) {
+    const f = customFields.find(cf => cf.id === id);
     const updated = customFields.filter(f => f.id !== id);
     setCustomFields(updated);
     saveStoredCustomFields(updated);
+    toast.info("Custom Field Deleted", f ? `'${f.name}' field removed` : "Field removed");
   }
 
   function handleToggleWidget(id: string) {
     const updated = widgets.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w);
+    const w = updated.find(item => item.id === id);
     setWidgets(updated);
     saveStoredWidgets(updated);
+    toast.success("Widget Updated", `${w?.name || "Widget"} is now ${w?.enabled ? "visible" : "hidden"}`);
   }
 
   function handleAddUser(user: UserAccount) {
     const updated = [...users, user];
     setUsers(updated);
     saveStoredUsers(updated);
+    toast.success("User Added", `'${user.name}' (${user.role}) added`);
   }
 
   function handleUpdateRole(id: string, role: UserAccount["role"]) {
     const updated = users.map(u => u.id === id ? { ...u, role } : u);
+    const u = updated.find(user => user.id === id);
     setUsers(updated);
     saveStoredUsers(updated);
+    toast.success("Role Updated", `${u?.name || "User"} permission updated to ${role}`);
   }
 
   const tasks = typeof window !== "undefined" ? loadStoredTasks() : [];
@@ -242,7 +254,7 @@ export default function AdminPage() {
                 onSave={newS => {
                   setSettings(newS);
                   saveStoredSettings(newS);
-                  alert("Settings saved successfully!");
+                  toast.success("Settings Saved", "System settings and branding updated successfully");
                 }}
               />
             )}

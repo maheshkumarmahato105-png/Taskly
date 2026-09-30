@@ -6,6 +6,7 @@ import { Topbar } from "@/components/layout/Topbar";
 import { CategoryManager } from "@/components/admin/CategoryManager";
 import { ArchitectureModal } from "@/components/layout/ArchitectureModal";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
+import { toast } from "@/components/ui/Toast";
 import {
   loadStoredCategories,
   saveStoredCategories,
@@ -30,12 +31,15 @@ export default function CategoriesPage() {
     const updated = [...categories, { id: "cat-" + Date.now(), ...cat }];
     setCategories(updated);
     saveStoredCategories(updated);
+    toast.success("Category Created", `'${cat.name}' has been created`);
   }
 
   function handleDeleteCategory(id: string) {
+    const found = categories.find(c => c.id === id);
     const updated = categories.filter(c => c.id !== id);
     setCategories(updated);
     saveStoredCategories(updated);
+    toast.info("Category Deleted", found ? `'${found.name}' removed` : "Category removed");
   }
 
   const taskCounts: Record<string, number> = {};
