@@ -133,3 +133,9 @@ declare module "lucide-react" {
   export const Menu: Icon;
   export const WalletCards: Icon;
 }
+
+declare var process: {
+  env: {
+    [key: string]: string | undefined;
+  };
+};

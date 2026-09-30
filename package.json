@@ -1,10 +1,12 @@
 {
   "name": "taskly-platform",
   "private": true,
-  "version": "1.0.0",
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "dev": "cd frontend && npm run dev",
-    "start": "cd frontend && npm start"
+    "build": "npm run --prefix frontend build",
+    "dev": "npm run --prefix frontend dev",
+    "start": "npm run --prefix frontend start"
   }
 }
