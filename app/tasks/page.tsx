@@ -1,0 +1,313 @@
+"use client";
+
+import React, { useEffect, useState, useMemo } from "react";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Topbar } from "@/components/layout/Topbar";
+import { TaskTable } from "@/components/tasks/TaskTable";
+import { TaskKanban } from "@/components/tasks/TaskKanban";
+import { TaskDrawer } from "@/components/tasks/TaskDrawer";
+import { TaskModal } from "@/components/tasks/TaskModal";
+import { BulkActions } from "@/components/tasks/BulkActions";
+import { FilterBar } from "@/components/tasks/FilterBar";
+import { api } from "@/lib/api";
+import {
+  loadStoredTasks,
+  saveStoredTasks,
+  loadStoredCategories,
+  loadStoredStatuses,
+  addStoredAuditLog,
+} from "@/lib/store";
+import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
+import { Plus } from "lucide-react";
+
+export default function TasksPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [statuses, setStatuses] = useState<Lookup[]>([]);
+  const [categories, setCategories] = useState<Lookup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [currentFilter, setCurrentFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("default");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const [activeDrawerTask, setActiveDrawerTask] = useState<Task | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [taskRes, statusRes, catRes] = await Promise.all([
+          api.tasks(),
+          api.statuses(),
+          api.categories(),
+        ]);
+        setTasks(taskRes.items);
+        setStatuses(statusRes.items);
+        setCategories(catRes.items);
+      } catch (e) {
+        console.warn("Using offline fallback data", e);
+        setTasks(loadStoredTasks());
+        setStatuses(loadStoredStatuses());
+        setCategories(loadStoredCategories());
+      } finally {
+        setLoading(false);
+      }
+    }
+    void loadData();
+  }, []);
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      saveStoredTasks(tasks);
+    }
+  }, [tasks]);
+
+  const counts = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      total: tasks.length,
+      today: tasks.filter(t => t.dueDate === today && t.status !== "Completed").length,
+      upcoming: tasks.filter(t => t.dueDate && t.dueDate > today && t.status !== "Completed").length,
+      completed: tasks.filter(t => t.status === "Completed").length,
+      overdue: tasks.filter(t => t.dueDate && t.dueDate < today && t.status !== "Completed").length,
+    };
+  }, [tasks]);
+
+  const completionRate = tasks.length > 0 ? Math.round((counts.completed / tasks.length) * 100) : 0;
+
+  const filteredTasks = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    let list = tasks.filter(t => {
+      if (searchQuery) {
+        const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority}`.toLowerCase();
+        if (!str.includes(searchQuery.toLowerCase())) return false;
+      }
+      if (currentFilter === "today") return t.dueDate === today;
+      if (currentFilter === "upcoming") return t.dueDate && t.dueDate > today && t.status !== "Completed";
+      if (currentFilter === "completed") return t.status === "Completed";
+      if (currentFilter === "not-started") return t.status === "Not Started";
+      if (currentFilter === "in-progress") return t.status === "In Progress";
+      if (currentFilter === "high") return t.priority === "High" || t.priority === "Urgent";
+      if (currentFilter === "overdue") return Boolean(t.dueDate && t.dueDate < today && t.status !== "Completed");
+      if (currentFilter.startsWith("category:")) return t.category === currentFilter.slice(9);
+      return true;
+    });
+
+    list.sort((a, b) => {
+      if (sortBy === "priority") {
+        const rank = { Urgent: 1, High: 2, Medium: 3, Low: 4 };
+        return (rank[a.priority] || 9) - (rank[b.priority] || 9);
+      }
+      if (sortBy === "status") {
+        const rank = { "In Progress": 1, "Not Started": 2, "Completed": 3 };
+        return (rank[a.status] || 9) - (rank[b.status] || 9);
+      }
+      if (sortBy === "due") return (a.dueDate || "9999").localeCompare(b.dueDate || "9999");
+      if (sortBy === "category") return (a.category || "").localeCompare(b.category || "");
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      return 0;
+    });
+
+    return list;
+  }, [tasks, currentFilter, searchQuery, sortBy]);
+
+  function handleToggleSelect(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleSelectAll() {
+    if (selectedIds.size === filteredTasks.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredTasks.map(t => t.id)));
+    }
+  }
+
+  function handleBulkStatus(status: TaskStatus) {
+    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status } : t));
+    setSelectedIds(new Set());
+  }
+
+  function handleBulkPriority(priority: TaskPriority) {
+    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, priority } : t));
+    setSelectedIds(new Set());
+  }
+
+  function handleBulkDelete() {
+    if (!confirm(`Delete ${selectedIds.size} selected tasks?`)) return;
+    setTasks(prev => prev.filter(t => !selectedIds.has(t.id)));
+    setSelectedIds(new Set());
+  }
+
+  function handleSaveTask(payload: {
+    title: string;
+    description: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    category: string;
+    dueDate: string;
+    assignee: string;
+  }) {
+    if (editingTask) {
+      setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...payload, updatedAt: new Date().toISOString() } : t));
+    } else {
+      const newTask: Task = {
+        id: String(Date.now()),
+        ...payload,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setTasks(prev => [newTask, ...prev]);
+    }
+    setModalOpen(false);
+    setEditingTask(null);
+  }
+
+  return (
+    <div className="app">
+      <Sidebar categories={categories} counts={counts} completionRate={completionRate} />
+
+      <div className="main-wrapper">
+        <Topbar breadcrumbTitle="All Tasks Workspace" />
+
+        <main className="content-area">
+          <div className="hero">
+            <div>
+              <div className="hero-tag">TASK MANAGEMENT</div>
+              <h1 className="hero-title">Tasks Workspace</h1>
+              <p className="hero-desc">Filter, sort, search, and manage tasks across list and Kanban views.</p>
+            </div>
+            <div className="hero-controls">
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setEditingTask(null);
+                  setModalOpen(true);
+                }}
+              >
+                <Plus size={16} /> New task
+              </button>
+            </div>
+          </div>
+
+          <div className="panel-card">
+            <div className="task-panel-header">
+              <div className="task-panel-title">
+                <h2>Tasks Overview</h2>
+                <p>Track progress, priorities, and deadlines across your teams.</p>
+              </div>
+              <div className="view-switchers">
+                <button
+                  className={`view-switcher-btn ${viewMode === "list" ? "active" : ""}`}
+                  onClick={() => setViewMode("list")}
+                >
+                  Table
+                </button>
+                <button
+                  className={`view-switcher-btn ${viewMode === "kanban" ? "active" : ""}`}
+                  onClick={() => setViewMode("kanban")}
+                >
+                  Kanban
+                </button>
+              </div>
+            </div>
+
+            <FilterBar
+              currentFilter={currentFilter}
+              searchQuery={searchQuery}
+              sortBy={sortBy}
+              onFilterChange={setCurrentFilter}
+              onSearchChange={setSearchQuery}
+              onSortChange={setSortBy}
+              onSavedViewChange={view => setCurrentFilter(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")}
+            />
+
+            <BulkActions
+              selectedCount={selectedIds.size}
+              onSetStatus={handleBulkStatus}
+              onSetPriority={handleBulkPriority}
+              onDelete={handleBulkDelete}
+              onCancel={() => setSelectedIds(new Set())}
+            />
+
+            {viewMode === "list" ? (
+              <TaskTable
+                tasks={filteredTasks}
+                statuses={statuses}
+                categories={categories}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
+                onSelectAll={handleSelectAll}
+                onOpenDetails={setActiveDrawerTask}
+                onEdit={task => {
+                  setEditingTask(task);
+                  setModalOpen(true);
+                }}
+                onDelete={task => {
+                  if (confirm(`Delete "${task.title}"?`)) {
+                    setTasks(prev => prev.filter(t => t.id !== task.id));
+                  }
+                }}
+                onChangeStatus={(task, status) => {
+                  setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status } : t));
+                }}
+                onChangePriority={(task, priority) => {
+                  setTasks(prev => prev.map(t => t.id === task.id ? { ...t, priority } : t));
+                }}
+              />
+            ) : (
+              <TaskKanban
+                tasks={filteredTasks}
+                categories={categories}
+                onOpenDetails={setActiveDrawerTask}
+                onAddTask={status => {
+                  setEditingTask(null);
+                  setModalOpen(true);
+                }}
+                onMoveTask={(task, newStatus) => {
+                  setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+                }}
+              />
+            )}
+          </div>
+        </main>
+      </div>
+
+      <TaskDrawer
+        task={activeDrawerTask}
+        isOpen={Boolean(activeDrawerTask)}
+        statuses={statuses}
+        categories={categories}
+        onClose={() => setActiveDrawerTask(null)}
+        onUpdate={updated => {
+          setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+          setActiveDrawerTask(updated);
+        }}
+        onDelete={task => {
+          setTasks(prev => prev.filter(t => t.id !== task.id));
+          setActiveDrawerTask(null);
+        }}
+      />
+
+      <TaskModal
+        isOpen={modalOpen}
+        editingTask={editingTask}
+        statuses={statuses}
+        categories={categories}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingTask(null);
+        }}
+        onSave={handleSaveTask}
+      />
+    </div>
+  );
+}
