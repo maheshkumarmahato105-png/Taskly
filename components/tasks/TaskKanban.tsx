@@ -10,6 +10,7 @@ interface TaskKanbanProps {
   onOpenDetails: (task: Task) => void;
   onAddTask: (status: TaskStatus) => void;
   onMoveTask: (task: Task, newStatus: TaskStatus) => void;
+  onSelectCategory?: (category: string) => void;
 }
 
 export function TaskKanban({
@@ -18,6 +19,7 @@ export function TaskKanban({
   onOpenDetails,
   onAddTask,
   onMoveTask,
+  onSelectCategory,
 }: TaskKanbanProps) {
   const columns: { status: TaskStatus; label: string; color: string }[] = [
     { status: "Not Started", label: "Not Started", color: "#64748B" },
@@ -143,7 +145,17 @@ export function TaskKanban({
                     onClick={() => onOpenDetails(task)}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <div className="category-pill" style={{ fontSize: "10px", padding: "2px 8px" }}>
+                      <div
+                        className="category-pill"
+                        style={{ fontSize: "10px", padding: "2px 8px", cursor: onSelectCategory ? "pointer" : "default" }}
+                        onClick={e => {
+                          if (onSelectCategory) {
+                            e.stopPropagation();
+                            onSelectCategory(task.category);
+                          }
+                        }}
+                        title={onSelectCategory ? `Show only '${task.category}' tasks` : undefined}
+                      >
                         <span className="category-dot" style={{ background: catColor, width: "6px", height: "6px" }} />
                         {task.category}
                       </div>

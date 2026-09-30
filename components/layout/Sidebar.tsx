@@ -31,6 +31,8 @@ interface SidebarProps {
   brandName?: string;
   onAddCategory?: () => void;
   onOpenArchitectureModal?: () => void;
+  selectedCategory?: string;
+  onSelectCategory?: (category: string) => void;
 }
 
 export function Sidebar({
@@ -40,6 +42,8 @@ export function Sidebar({
   brandName = "EasyMyLearning",
   onAddCategory,
   onOpenArchitectureModal,
+  selectedCategory,
+  onSelectCategory,
 }: SidebarProps) {
   const pathname = usePathname();
 
@@ -105,12 +109,44 @@ export function Sidebar({
             </Link>
           </div>
           <nav className="nav-list">
-            {categories.slice(0, 7).map(cat => (
-              <Link key={cat.id} href={`/tasks?category=${encodeURIComponent(cat.name)}`} className="nav-item">
-                <span className="category-dot" style={{ background: cat.color || "#64748B" }} />
-                <span className="nav-title">{cat.name}</span>
-              </Link>
-            ))}
+            {categories.slice(0, 10).map(cat => {
+              const isSelected = selectedCategory?.toLowerCase() === cat.name.toLowerCase();
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    if (onSelectCategory) {
+                      onSelectCategory(isSelected ? "" : cat.name);
+                    } else if (typeof window !== "undefined") {
+                      window.location.href = `/tasks?category=${encodeURIComponent(cat.name)}`;
+                    }
+                  }}
+                  className={`nav-item ${isSelected ? "active" : ""}`}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    border: "none",
+                    background: isSelected ? "#2A3448" : "transparent",
+                    boxShadow: isSelected ? "inset 3px 0 0 var(--brand)" : "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "9px 10px",
+                  }}
+                  title={isSelected ? `Clear filter: ${cat.name}` : `Show only ${cat.name} tasks`}
+                >
+                  <span className="category-dot" style={{ background: cat.color || "#64748B" }} />
+                  <span className="nav-title" style={{ color: isSelected ? "#fff" : undefined }}>{cat.name}</span>
+                  {isSelected && (
+                    <span className="nav-badge" style={{ background: "var(--brand)", color: "#1E293B", fontWeight: 800 }}>
+                      Selected
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </div>
 

@@ -45,6 +45,7 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState("default");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   const [activeDrawerTask, setActiveDrawerTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -93,6 +94,30 @@ export default function HomePage() {
       saveStoredTasks(tasks);
     }
   }, [tasks]);
+
+  // Read initial category from URL query parameters (e.g., ?category=Work)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get("category");
+      if (cat) {
+        setSelectedCategory(cat);
+      }
+    }
+  }, []);
+
+  const handleSelectCategory = (catName: string) => {
+    setSelectedCategory(catName);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (catName) {
+        url.searchParams.set("category", catName);
+      } else {
+        url.searchParams.delete("category");
+      }
+      window.history.pushState({}, "", url.toString());
+    }
+  };
 
   // Global Keyboard Shortcuts (PDF Page 7)
   useEffect(() => {
@@ -149,6 +174,10 @@ export default function HomePage() {
   const filteredTasks = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const list = tasks.filter(t => {
+      // Exclusively filter by selected category if one is chosen
+      if (selectedCategory && t.category.toLowerCase() !== selectedCategory.toLowerCase()) {
+        return false;
+      }
       if (searchQuery) {
         const str = `${t.title} ${t.description} ${t.category} ${t.status} ${t.priority} ${t.customFields?.reference_number || ""}`.toLowerCase();
         if (!str.includes(searchQuery.toLowerCase())) return false;
@@ -161,7 +190,7 @@ export default function HomePage() {
       if (currentFilter === "blocked") return t.status === "Blocked" || t.status === "On Hold";
       if (currentFilter === "high") return t.priority === "High" || t.priority === "Urgent";
       if (currentFilter === "overdue") return Boolean(t.dueDate && t.dueDate < today && t.status !== "Completed");
-      if (currentFilter.startsWith("category:")) return t.category === currentFilter.slice(9);
+      if (currentFilter.startsWith("category:")) return t.category.toLowerCase() === currentFilter.slice(9).toLowerCase();
       return true;
     });
 
@@ -179,7 +208,7 @@ export default function HomePage() {
       if (sortBy === "title") return a.title.localeCompare(b.title);
       return 0;
     });
-  }, [tasks, currentFilter, searchQuery, sortBy]);
+  }, [tasks, currentFilter, searchQuery, sortBy, selectedCategory]);
 
   function handleToggleSelect(id: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -273,6 +302,8 @@ export default function HomePage() {
         completionRate={completionRate}
         brandName="EasyMyLearning"
         onOpenArchitectureModal={() => setArchModalOpen(true)}
+        selectedCategory={selectedCategory}
+        onSelectCategory={handleSelectCategory}
       />
 
       <div className="main-wrapper">
@@ -353,6 +384,9 @@ export default function HomePage() {
                 onSavedViewChange={view =>
                   setCurrentFilter(view === "overdue-work" ? "overdue" : view === "today-focus" ? "today" : "all")
                 }
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={handleSelectCategory}
               />
 
               <BulkActions
@@ -393,6 +427,7 @@ export default function HomePage() {
                     addStoredAuditLog("Priority Changed", `'${task.title}' priority set to ${priority}`);
                     toast.success("Priority Updated", `'${task.title}' priority set to ${priority}`);
                   }}
+                  onSelectCategory={handleSelectCategory}
                 />
               ) : (
                 <TaskKanban
@@ -408,6 +443,7 @@ export default function HomePage() {
                     addStoredAuditLog("Status Transition", `'${task.title}' moved to ${newStatus}`);
                     toast.success("Status Transition", `'${task.title}' moved to ${newStatus}`);
                   }}
+                  onSelectCategory={handleSelectCategory}
                 />
               )}
             </div>

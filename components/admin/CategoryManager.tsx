@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import type { Lookup } from "@/types/task";
 
 interface CategoryManagerProps {
@@ -83,13 +84,23 @@ export function CategoryManager({
               <td><strong>{cat.name}</strong></td>
               <td>{taskCountsByCategory[cat.name] || 0} tasks</td>
               <td style={{ textAlign: "right" }}>
-                <button
-                  className="btn btn-secondary"
-                  style={{ height: "28px", padding: "0 8px", fontSize: "11px" }}
-                  onClick={() => onDeleteCategory(cat.id)}
-                >
-                  Delete
-                </button>
+                <div style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+                  <Link
+                    href={`/tasks?category=${encodeURIComponent(cat.name)}`}
+                    className="btn btn-secondary"
+                    style={{ height: "28px", padding: "0 10px", fontSize: "11px", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                    title={`View all tasks under ${cat.name}`}
+                  >
+                    View Tasks →
+                  </Link>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ height: "28px", padding: "0 8px", fontSize: "11px" }}
+                    onClick={() => onDeleteCategory(cat.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

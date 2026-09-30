@@ -16,6 +16,7 @@ interface TaskTableProps {
   onDelete: (task: Task) => void;
   onChangeStatus: (task: Task, status: TaskStatus) => void;
   onChangePriority: (task: Task, priority: TaskPriority) => void;
+  onSelectCategory?: (category: string) => void;
 }
 
 export function TaskTable({
@@ -30,6 +31,7 @@ export function TaskTable({
   onDelete,
   onChangeStatus,
   onChangePriority,
+  onSelectCategory,
 }: TaskTableProps) {
   function getCategoryColor(catName: string) {
     const cat = categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
@@ -148,7 +150,15 @@ export function TaskTable({
                 </div>
 
                 <div className="category-cell-col">
-                  <div className="category-pill">
+                  <div
+                    className="category-pill"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onSelectCategory?.(task.category);
+                    }}
+                    style={{ cursor: onSelectCategory ? "pointer" : "default" }}
+                    title={onSelectCategory ? `Show only '${task.category}' tasks` : undefined}
+                  >
                     <span className="category-dot" style={{ background: catColor }} />
                     {task.category}
                   </div>
