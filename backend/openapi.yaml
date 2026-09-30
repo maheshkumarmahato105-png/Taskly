@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: Taskly API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      responses:
+        "200": {description: OK}
+  /api/v1/dashboard/summary:
+    get:
+      responses:
+        "200": {description: Dashboard summary}
+  /api/v1/dashboard/upcoming:
+    get:
+      responses:
+        "200": {description: Upcoming tasks}
+  /api/v1/tasks:
+    get:
+      parameters:
+        - {name: search, in: query, schema: {type: string}}
+        - {name: status, in: query, schema: {type: string}}
+        - {name: category, in: query, schema: {type: string}}
+      responses:
+        "200": {description: Task list}
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: "#/components/schemas/TaskInput"}}
+      responses:
+        "200": {description: Created task}
+  /api/v1/tasks/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      responses:
+        "200": {description: Task}
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: "#/components/schemas/TaskInput"}}
+      responses:
+        "200": {description: Updated task}
+    delete:
+      responses:
+        "200": {description: Archived task}
+  /api/v1/tasks/{id}/status:
+    patch:
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {type: object, required: [statusId], properties: {statusId: {type: string, format: uuid}}}}
+      responses:
+        "200": {description: Updated task}
+  /api/v1/tasks/{id}/priority:
+    patch:
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {type: object, required: [priorityId], properties: {priorityId: {type: string, format: uuid}}}}
+      responses:
+        "200": {description: Updated task}
+  /api/v1/tasks/{id}/category:
+    patch:
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {type: object, required: [categoryId], properties: {categoryId: {type: string, format: uuid}}}}
+      responses:
+        "200": {description: Updated task}
+  /api/v1/tasks/{id}/due-date:
+    patch:
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {type: object, properties: {dueDate: {type: string, format: date, nullable: true}}}}
+      responses:
+        "200": {description: Updated task}
+  /api/v1/task-categories:
+    get:
+      responses:
+        "200": {description: Categories}
+  /api/v1/task-statuses:
+    get:
+      responses:
+        "200": {description: Statuses}
+  /api/v1/task-priorities:
+    get:
+      responses:
+        "200": {description: Priorities}
+  /api/v1/config/public:
+    get:
+      responses:
+        "200": {description: Public application configuration}
+  /api/v1/dashboard/widgets:
+    get:
+      responses:
+        "200": {description: Dashboard widgets}
+components:
+  schemas:
+    TaskInput:
+      type: object
+      required: [title, statusId, priorityId, categoryId]
+      properties:
+        title: {type: string}
+        description: {type: string}
+        statusId: {type: string, format: uuid}
+        priorityId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        dueDate: {type: string, format: date, nullable: true}

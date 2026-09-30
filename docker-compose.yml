@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: taskly-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taskly_tasks}
+      POSTGRES_USER: ${POSTGRES_USER:-taskly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskly_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+      - ./database/seeds/001_seed.sql:/docker-entrypoint-initdb.d/002_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taskly} -d ${POSTGRES_DB:-taskly_tasks}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: taskly-api
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      PORT: 8080
+      DATABASE_URL: postgres://${POSTGRES_USER:-taskly}:${POSTGRES_PASSWORD:-taskly_password}@postgres:5432/${POSTGRES_DB:-taskly_tasks}?sslmode=disable
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: taskly-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080/api/v1}
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
