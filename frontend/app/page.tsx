@@ -12,6 +12,14 @@ import { TaskModal } from "@/components/tasks/TaskModal";
 import { BulkActions } from "@/components/tasks/BulkActions";
 import { FilterBar } from "@/components/tasks/FilterBar";
 import { api } from "@/lib/api";
+import {
+  loadStoredTasks,
+  saveStoredTasks,
+  loadStoredCategories,
+  loadStoredStatuses,
+  calculateSummary,
+  addStoredAuditLog,
+} from "@/lib/store";
 import type { DashboardSummary, Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
 import { Plus } from "lucide-react";
 
@@ -192,13 +200,20 @@ export default function HomePage() {
         setStatuses(statusRes.items);
         setCategories(catRes.items);
       } catch {
-        const demo = getDemoTasks();
-        setTasks(demo);
-        setSummary(initialSummary);
-        setUpcoming([
-          { id: "1", title: "Finalize Taskly content plan", status: "In Progress", category: "Marketing", dueDate: new Date().toISOString().slice(0, 10) },
-          { id: "4", title: "Update CRM lead tracking system", status: "In Progress", category: "Operations", dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10) },
-        ]);
+        const storedTasks = loadStoredTasks();
+        const storedCats = loadStoredCategories();
+        const storedStatuses = loadStoredStatuses();
+        setTasks(storedTasks);
+        setCategories(storedCats);
+        setStatuses(storedStatuses);
+        setSummary(calculateSummary(storedTasks));
+        const today = new Date().toISOString().slice(0, 10);
+        setUpcoming(
+          storedTasks
+            .filter(t => t.dueDate && t.dueDate >= today && t.status !== "Completed")
+            .slice(0, 3)
+            .map(t => ({ id: t.id, title: t.title, status: t.status, category: t.category, dueDate: t.dueDate! }))
+        );
       }
     }
     void loadData();

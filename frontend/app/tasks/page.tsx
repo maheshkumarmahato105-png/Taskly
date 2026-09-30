@@ -10,6 +10,13 @@ import { TaskModal } from "@/components/tasks/TaskModal";
 import { BulkActions } from "@/components/tasks/BulkActions";
 import { FilterBar } from "@/components/tasks/FilterBar";
 import { api } from "@/lib/api";
+import {
+  loadStoredTasks,
+  saveStoredTasks,
+  loadStoredCategories,
+  loadStoredStatuses,
+  addStoredAuditLog,
+} from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
 import { Plus } from "lucide-react";
 
@@ -41,12 +48,21 @@ export default function TasksPage() {
         setCategories(catRes.items);
       } catch (e) {
         console.warn("Using offline fallback data", e);
+        setTasks(loadStoredTasks());
+        setStatuses(loadStoredStatuses());
+        setCategories(loadStoredCategories());
       } finally {
         setLoading(false);
       }
     }
     void loadData();
   }, []);
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      saveStoredTasks(tasks);
+    }
+  }, [tasks]);
 
   const counts = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
