@@ -39,9 +39,9 @@ export function DatabaseOperations() {
         </span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+      <div className="db-ops-grid" style={{ marginBottom: "20px" }}>
         {/* CLI Reference */}
-        <div style={{ background: "#1E293B", color: "#F8FAFC", borderRadius: "10px", padding: "16px", fontSize: "12px", fontFamily: "monospace" }}>
+        <div style={{ background: "#1E293B", color: "#F8FAFC", borderRadius: "10px", padding: "16px", fontSize: "12px", fontFamily: "monospace", overflowX: "auto" }}>
           <div style={{ color: "#FFAA00", fontWeight: 700, marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
             <Database size={14} /> PostgreSQL CLI Commands
           </div>

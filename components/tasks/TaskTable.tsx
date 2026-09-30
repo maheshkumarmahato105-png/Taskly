@@ -67,10 +67,12 @@ export function TaskTable({
           </button>
         </div>
         <span>Task / Description</span>
-        <span className="status-cell-col">Status</span>
-        <span className="priority-cell-col">Priority</span>
-        <span className="due-cell-col">Due Date</span>
-        <span className="category-cell-col">Category</span>
+        <div className="task-head-badges">
+          <span className="status-cell-col">Status</span>
+          <span className="priority-cell-col">Priority</span>
+          <span className="due-cell-col">Due Date</span>
+          <span className="category-cell-col">Category</span>
+        </div>
         <span style={{ textAlign: "right" }}>Actions</span>
       </div>
 
@@ -111,43 +113,45 @@ export function TaskTable({
                 </div>
               </div>
 
-              <div className="status-cell-col">
-                <select
-                  className={`inline-badge-select status-badge ${task.status.toLowerCase().replace(/\s+/g, "-")}`}
-                  value={task.status}
-                  onChange={e => onChangeStatus(task, e.target.value as TaskStatus)}
-                >
-                  {statuses.map(s => (
-                    <option key={s.id} value={s.name}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="priority-cell-col">
-                <select
-                  className={`inline-badge-select priority-badge ${task.priority.toLowerCase()}`}
-                  value={task.priority}
-                  onChange={e => onChangePriority(task, e.target.value as TaskPriority)}
-                >
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                  <option value="Urgent">Urgent</option>
-                </select>
-              </div>
-
-              <div className="due-cell-col">
-                <div className={`due-pill ${task.dueDate === today ? "today" : ""} ${overdue ? "overdue" : ""}`}>
-                  {overdue ? "Overdue" : formatDisplayDate(task.dueDate)}
+              <div className="task-row-badges">
+                <div className="status-cell-col">
+                  <select
+                    className={`inline-badge-select status-badge ${task.status.toLowerCase().replace(/\s+/g, "-")}`}
+                    value={task.status}
+                    onChange={e => onChangeStatus(task, e.target.value as TaskStatus)}
+                  >
+                    {statuses.map(s => (
+                      <option key={s.id} value={s.name}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
 
-              <div className="category-cell-col">
-                <div className="category-pill">
-                  <span className="category-dot" style={{ background: catColor }} />
-                  {task.category}
+                <div className="priority-cell-col">
+                  <select
+                    className={`inline-badge-select priority-badge ${task.priority.toLowerCase()}`}
+                    value={task.priority}
+                    onChange={e => onChangePriority(task, e.target.value as TaskPriority)}
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                </div>
+
+                <div className="due-cell-col">
+                  <div className={`due-pill ${task.dueDate === today ? "today" : ""} ${overdue ? "overdue" : ""}`}>
+                    {overdue ? "Overdue" : formatDisplayDate(task.dueDate)}
+                  </div>
+                </div>
+
+                <div className="category-cell-col">
+                  <div className="category-pill">
+                    <span className="category-dot" style={{ background: catColor }} />
+                    {task.category}
+                  </div>
                 </div>
               </div>
 

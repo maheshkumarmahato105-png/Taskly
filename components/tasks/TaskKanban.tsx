@@ -57,16 +57,7 @@ export function TaskKanban({
   }
 
   return (
-    <div
-      className="kanban-view-container show"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, minmax(260px, 1fr))",
-        gap: "14px",
-        overflowX: "auto",
-        paddingBottom: "12px",
-      }}
-    >
+    <div className="kanban-view-container show">
       {columns.map(col => {
         const colTasks = tasks.filter(t => t.status === col.status);
         const cssStatus = col.status.toLowerCase().replace(/\s+/g, "-");

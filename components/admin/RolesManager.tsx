@@ -122,7 +122,7 @@ export function RolesManager({ users, onAddUser, onUpdateRole }: RolesManagerPro
           <strong style={{ fontSize: "12px", color: "var(--ink)", display: "block", marginBottom: "10px" }}>
             + Invite New Team Member
           </strong>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px auto", gap: "10px" }}>
+          <div className="admin-field-form-grid">
             <input
               type="text"
               className="form-input"

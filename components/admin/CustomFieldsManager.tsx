@@ -85,7 +85,7 @@ export function CustomFieldsManager({ fields, onAddField, onDeleteField }: Custo
         <strong style={{ fontSize: "12px", color: "var(--ink)", display: "block", marginBottom: "12px" }}>
           + Add New Dynamic Field
         </strong>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 140px auto", gap: "10px", alignItems: "flex-end" }}>
+        <div className="admin-field-form-grid">
           <div>
             <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: "4px" }}>
               Field Label

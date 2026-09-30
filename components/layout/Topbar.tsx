@@ -58,19 +58,19 @@ export function Topbar({
           </span>
         </Link>
         <span className="crumb-sep">/</span>
-        <strong>{breadcrumbTitle}</strong>
+        <strong className="topbar-crumb-title">{breadcrumbTitle}</strong>
       </div>
 
       <div className="topbar-actions">
         {onOpenArchitecture && (
           <button
-            className="btn btn-secondary"
+            className="btn btn-secondary topbar-plan-btn"
             onClick={onOpenArchitecture}
             style={{ height: "34px", padding: "0 10px", fontSize: "11px", gap: "6px" }}
             title="View Architecture & Deployment Plan"
           >
             <FileText size={14} style={{ color: "#FFAA00" }} />
-            <span>Plan Specs</span>
+            <span className="topbar-btn-text">Plan Specs</span>
           </button>
         )}
 
@@ -126,7 +126,7 @@ export function Topbar({
                 position: "absolute",
                 top: "45px",
                 right: "0",
-                width: "320px",
+                width: "min(340px, calc(100vw - 32px))",
                 background: "#fff",
                 borderRadius: "12px",
                 border: "1px solid var(--border)",

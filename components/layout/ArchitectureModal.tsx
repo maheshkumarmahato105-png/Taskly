@@ -19,39 +19,35 @@ export function ArchitectureModal({ isOpen, onClose }: ArchitectureModalProps) {
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: "800px", width: "92%", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
       >
-        <div className="modal-header" style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <BrandMark size={40} glow />
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="modal-header" style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", color: "#fff", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+            <BrandMark size={36} glow />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 <span style={{ background: "#FFAA00", color: "#1E293B", padding: "2px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: 900 }}>
-                  ARCHITECTURE & DEPLOYMENT PLAN
+                  ARCHITECTURE PLAN
                 </span>
-                <span style={{ fontSize: "11px", color: "#94A3B8" }}>EasyMyLearning Task Manager</span>
+                <span style={{ fontSize: "11px", color: "#94A3B8" }}>EasyMyLearning</span>
               </div>
-              <h2 style={{ color: "#fff", fontSize: "18px", marginTop: "4px" }}>Full-Stack System Architecture</h2>
-              <p style={{ color: "#94A3B8", fontSize: "11px" }}>
-                Next.js + React frontend | Go backend | PostgreSQL | Docker | REST API
+              <h2 style={{ color: "#fff", fontSize: "17px", marginTop: "4px" }}>System Architecture</h2>
+              <p style={{ color: "#94A3B8", fontSize: "11px", margin: 0 }}>
+                Next.js + Go REST API + PostgreSQL
               </p>
             </div>
           </div>
-          <button className="drawer-close-btn" onClick={onClose} style={{ color: "#fff" }}>
+          <button className="drawer-close-btn" onClick={onClose} style={{ color: "#fff", flexShrink: 0 }}>
             <X size={18} />
           </button>
         </div>
 
-        <div className="modal-body" style={{ overflowY: "auto", padding: "20px" }}>
+        <div className="modal-body" style={{ overflowY: "auto", padding: "18px" }}>
           {/* Section 1: Overview */}
           <div style={{ marginBottom: "20px" }}>
             <h4 style={{ fontSize: "14px", fontWeight: 800, color: "var(--ink)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
               <Globe size={16} style={{ color: "#FFAA00" }} /> 1. System Architecture & Topology
             </h4>
-            <div style={{ background: "#F8FAFC", border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", fontSize: "12px", fontFamily: "monospace", color: "#334155" }}>
-              {"Browser -> Cloudflare (CDN) -> Next.js Application (Vercel / Port 3000)"}<br />
-              {"                     `--> Nginx Proxy -> Go REST API (Port 8080)"}<br />
-              {"                                           +--> PostgreSQL (Source of Truth)"}<br />
-              {"                                           +--> Redis (Queue / Cache)"}<br />
-              {"                                           `--> S3 / Cloudflare R2 (Attachments)"}
+            <div style={{ background: "#F8FAFC", border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", fontSize: "11px", fontFamily: "monospace", color: "#334155", overflowX: "auto", whiteSpace: "pre" }}>
+              {"Browser -> Cloudflare (CDN) -> Next.js Application (Vercel / Port 3000)\n                     `--> Nginx Proxy -> Go REST API (Port 8080)\n                                           +--> PostgreSQL (Source of Truth)\n                                           +--> Redis (Queue / Cache)\n                                           `--> S3 / Cloudflare R2 (Attachments)"}
             </div>
           </div>
 
@@ -60,7 +56,7 @@ export function ArchitectureModal({ isOpen, onClose }: ArchitectureModalProps) {
             <h4 style={{ fontSize: "14px", fontWeight: 800, color: "var(--ink)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
               <Server size={16} style={{ color: "#2563EB" }} /> 2. Target Production Domains
             </h4>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <div className="arch-grid-2">
               <div style={{ padding: "10px", background: "#EFF6FF", borderRadius: "8px", border: "1px solid #BFDBFE" }}>
                 <strong style={{ fontSize: "12px", color: "#1E40AF" }}>app.easymylearning.com</strong>
                 <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#3B82F6" }}>Next.js UI Application Layer</p>
