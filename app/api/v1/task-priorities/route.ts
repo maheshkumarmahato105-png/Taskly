@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { serverDb } from "@/lib/server-db";
+
+export async function GET() {
+  const items = serverDb.getPriorities();
+  return NextResponse.json({ items });
+}

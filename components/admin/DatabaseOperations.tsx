@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Download, Upload, RotateCcw, Database, CheckCircle2 } from "lucide-react";
 import { exportBackupJson, importBackupJson, getInitialTasks, saveStoredTasks } from "@/lib/store";
 import { toast } from "@/components/ui/Toast";
+import { api } from "@/lib/api";
 
 export function DatabaseOperations() {
   const [copied, setCopied] = useState(false);
@@ -25,6 +26,7 @@ export function DatabaseOperations() {
   function handleResetSeed() {
     if (!confirm("Reset database state to original seed data (PDF Page 11)?")) return;
     saveStoredTasks(getInitialTasks());
+    api.resetDatabase().catch(() => {});
     setStatusMsg("Database reset to demo seed data. Please refresh to view.");
     toast.info("Database Reset", "Seed data restored to defaults");
     window.location.reload();

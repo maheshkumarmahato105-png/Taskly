@@ -9,6 +9,16 @@ type Category struct {
 	SortOrder   int    `json:"sortOrder"`
 }
 
+type CategoryOrderItem struct {
+	ID        string `json:"id"`
+	SortOrder int    `json:"sortOrder"`
+}
+
+type ReorderCategoriesRequest struct {
+	Items       []CategoryOrderItem `json:"items,omitempty"`
+	CategoryIDs []string            `json:"categoryIds,omitempty"`
+}
+
 type Status struct {
 	ID          string `json:"id"`
 	Code        string `json:"code"`

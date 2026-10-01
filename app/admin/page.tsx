@@ -12,6 +12,7 @@ import { RolesManager } from "@/components/admin/RolesManager";
 import { DatabaseOperations } from "@/components/admin/DatabaseOperations";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { toast } from "@/components/ui/Toast";
+import { api } from "@/lib/api";
 import {
   loadStoredCategories,
   saveStoredCategories,
@@ -94,6 +95,7 @@ export default function AdminPage() {
     setCategories(updated);
     saveStoredCategories(updated);
     toast.success("Category Added", `'${newCat.name}' has been created`);
+    api.createCategory(newCat).catch(() => {});
   }
 
   function handleDeleteCategory(id: string) {
@@ -102,6 +104,7 @@ export default function AdminPage() {
     setCategories(updated);
     saveStoredCategories(updated);
     toast.info("Category Deleted", cat ? `'${cat.name}' removed` : "Category removed");
+    api.deleteCategory(id).catch(() => {});
   }
 
   function handleAddCustomField(field: Omit<CustomFieldDefinition, "id">) {
@@ -109,6 +112,7 @@ export default function AdminPage() {
     setCustomFields(updated);
     saveStoredCustomFields(updated);
     toast.success("Custom Field Created", `'${field.name}' dynamic field added`);
+    api.createCustomField(field).catch(() => {});
   }
 
   function handleDeleteCustomField(id: string) {
@@ -117,6 +121,7 @@ export default function AdminPage() {
     setCustomFields(updated);
     saveStoredCustomFields(updated);
     toast.info("Custom Field Deleted", f ? `'${f.name}' field removed` : "Field removed");
+    api.deleteCustomField(id).catch(() => {});
   }
 
   function handleToggleWidget(id: string) {
@@ -125,6 +130,7 @@ export default function AdminPage() {
     setWidgets(updated);
     saveStoredWidgets(updated);
     toast.success("Widget Updated", `${w?.name || "Widget"} is now ${w?.enabled ? "visible" : "hidden"}`);
+    api.toggleWidget(id).catch(() => {});
   }
 
   function handleAddUser(user: UserAccount) {
@@ -132,6 +138,7 @@ export default function AdminPage() {
     setUsers(updated);
     saveStoredUsers(updated);
     toast.success("User Added", `'${user.name}' (${user.role}) added`);
+    api.createUser(user).catch(() => {});
   }
 
   function handleUpdateRole(id: string, role: UserAccount["role"]) {
@@ -140,12 +147,14 @@ export default function AdminPage() {
     setUsers(updated);
     saveStoredUsers(updated);
     toast.success("Role Updated", `${u?.name || "User"} permission updated to ${role}`);
+    api.updateUserRole(id, role).catch(() => {});
   }
 
   function handleReorderCategories(updated: Lookup[]) {
     setCategories(updated);
     saveStoredCategories(updated);
     toast.success("Categories Arranged", "Category order updated successfully");
+    api.reorderCategories(updated.map((c, i) => ({ id: c.id, sortOrder: i + 1 }))).catch(() => {});
   }
 
   const tasks = typeof window !== "undefined" ? loadStoredTasks() : [];
@@ -278,6 +287,7 @@ export default function AdminPage() {
                   setSettings(newS);
                   saveStoredSettings(newS);
                   toast.success("Settings Saved", "System settings and branding updated successfully");
+                  api.updateSettings(newS as any).catch(() => {});
                 }}
               />
             )}

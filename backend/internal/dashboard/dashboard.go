@@ -18,11 +18,19 @@ type UpcomingTask struct {
 }
 
 type Widget struct {
-	ID            string `json:"id"`
-	Code          string `json:"code"`
-	Name          string `json:"name"`
-	WidgetType    string `json:"widgetType"`
-	Title         string `json:"title"`
-	DefaultWidth  int    `json:"defaultWidth"`
-	SortOrder     int    `json:"sortOrder"`
+	ID           string `json:"id"`
+	Code         string `json:"code,omitempty"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	WidgetType   string `json:"widgetType,omitempty"`
+	Title        string `json:"title,omitempty"`
+	DefaultWidth int    `json:"defaultWidth,omitempty"`
+	SortOrder    int    `json:"sortOrder,omitempty"`
+	Enabled      bool   `json:"enabled"`
+	Position     int    `json:"position"`
+}
+
+type UpdateWidgetRequest struct {
+	Enabled  *bool `json:"enabled,omitempty"`
+	Position *int  `json:"position,omitempty"`
 }

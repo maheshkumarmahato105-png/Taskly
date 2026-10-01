@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -17,25 +16,90 @@ func New(handlers *Handlers, corsOrigins []string) *Router {
 		r.corsOrigins[origin] = true
 	}
 
+	// Health check
 	r.mux.HandleFunc("GET /health", handlers.health)
+
+	// Dashboard (PDF Page 4)
 	r.mux.HandleFunc("GET /api/v1/dashboard/summary", handlers.dashboardSummary)
 	r.mux.HandleFunc("GET /api/v1/dashboard/upcoming", handlers.dashboardUpcoming)
+	r.mux.HandleFunc("GET /api/v1/dashboard/widgets", handlers.dashboardWidgets)
+	r.mux.HandleFunc("PATCH /api/v1/dashboard/widgets/{id}", handlers.updateWidget)
+	r.mux.HandleFunc("PUT /api/v1/dashboard/widgets/{id}", handlers.updateWidget)
 
+	// Tasks (PDF Page 4)
 	r.mux.HandleFunc("GET /api/v1/tasks", handlers.listTasks)
 	r.mux.HandleFunc("POST /api/v1/tasks", handlers.createTask)
+	r.mux.HandleFunc("POST /api/v1/tasks/bulk", handlers.bulkTasks)
 	r.mux.HandleFunc("GET /api/v1/tasks/{id}", handlers.getTask)
 	r.mux.HandleFunc("PUT /api/v1/tasks/{id}", handlers.updateTask)
 	r.mux.HandleFunc("DELETE /api/v1/tasks/{id}", handlers.deleteTask)
+
+	// Inline updates (PDF Page 4)
 	r.mux.HandleFunc("PATCH /api/v1/tasks/{id}/status", handlers.changeStatus)
 	r.mux.HandleFunc("PATCH /api/v1/tasks/{id}/priority", handlers.changePriority)
 	r.mux.HandleFunc("PATCH /api/v1/tasks/{id}/category", handlers.changeCategory)
 	r.mux.HandleFunc("PATCH /api/v1/tasks/{id}/due-date", handlers.changeDueDate)
 
+	// Task Details Drawer sub-routes (PDF Page 7)
+	r.mux.HandleFunc("POST /api/v1/tasks/{id}/checklists", handlers.addChecklist)
+	r.mux.HandleFunc("PATCH /api/v1/tasks/{id}/checklists/{cid}", handlers.toggleChecklist)
+	r.mux.HandleFunc("DELETE /api/v1/tasks/{id}/checklists/{cid}", handlers.deleteChecklist)
+	r.mux.HandleFunc("GET /api/v1/tasks/{id}/comments", handlers.listComments)
+	r.mux.HandleFunc("POST /api/v1/tasks/{id}/comments", handlers.addComment)
+	r.mux.HandleFunc("GET /api/v1/tasks/{id}/attachments", handlers.listAttachments)
+	r.mux.HandleFunc("POST /api/v1/tasks/{id}/attachments", handlers.addAttachment)
+	r.mux.HandleFunc("DELETE /api/v1/tasks/{id}/attachments/{aid}", handlers.deleteAttachment)
+	r.mux.HandleFunc("GET /api/v1/tasks/{id}/activity", handlers.taskActivity)
+
+	// Configuration & Reference tables (PDF Page 4, 5, 6)
 	r.mux.HandleFunc("GET /api/v1/task-categories", handlers.listCategories)
+	r.mux.HandleFunc("GET /task-categories", handlers.listCategories)
+	r.mux.HandleFunc("POST /api/v1/task-categories", handlers.createCategory)
+	r.mux.HandleFunc("PUT /api/v1/task-categories/reorder", handlers.reorderCategories)
+	r.mux.HandleFunc("POST /api/v1/task-categories/reorder", handlers.reorderCategories)
+	r.mux.HandleFunc("PUT /task-categories/reorder", handlers.reorderCategories)
+	r.mux.HandleFunc("POST /task-categories/reorder", handlers.reorderCategories)
+	r.mux.HandleFunc("PUT /api/v1/task-categories/{id}", handlers.updateCategory)
+	r.mux.HandleFunc("DELETE /api/v1/task-categories/{id}", handlers.deleteCategory)
+
 	r.mux.HandleFunc("GET /api/v1/task-statuses", handlers.listStatuses)
+	r.mux.HandleFunc("GET /task-statuses", handlers.listStatuses)
+	r.mux.HandleFunc("POST /api/v1/task-statuses", handlers.createStatus)
+	r.mux.HandleFunc("PUT /api/v1/task-statuses/{id}", handlers.updateStatus)
+	r.mux.HandleFunc("DELETE /api/v1/task-statuses/{id}", handlers.deleteStatus)
+
 	r.mux.HandleFunc("GET /api/v1/task-priorities", handlers.listPriorities)
+	r.mux.HandleFunc("GET /task-priorities", handlers.listPriorities)
+
+	r.mux.HandleFunc("GET /api/v1/custom-fields", handlers.listCustomFields)
+	r.mux.HandleFunc("POST /api/v1/custom-fields", handlers.createCustomField)
+	r.mux.HandleFunc("DELETE /api/v1/custom-fields/{id}", handlers.deleteCustomField)
+
 	r.mux.HandleFunc("GET /api/v1/config/public", handlers.publicConfig)
-	r.mux.HandleFunc("GET /api/v1/dashboard/widgets", handlers.dashboardWidgets)
+	r.mux.HandleFunc("GET /api/v1/settings", handlers.allSettings)
+	r.mux.HandleFunc("PUT /api/v1/settings", handlers.updateSettings)
+	r.mux.HandleFunc("GET /api/v1/audit-logs", handlers.auditLogs)
+	r.mux.HandleFunc("POST /api/v1/database/reset", handlers.resetDatabase)
+	r.mux.HandleFunc("POST /api/v1/admin/reset-seed", handlers.resetDatabase)
+
+	// Users & Roles (RBAC) (PDF Page 5 & 6)
+	r.mux.HandleFunc("GET /api/v1/roles", handlers.listRoles)
+	r.mux.HandleFunc("GET /roles", handlers.listRoles)
+	r.mux.HandleFunc("GET /api/v1/users", handlers.listUsers)
+	r.mux.HandleFunc("POST /api/v1/users", handlers.createUser)
+	r.mux.HandleFunc("PATCH /api/v1/users/{id}/role", handlers.updateUserRole)
+	r.mux.HandleFunc("PUT /api/v1/users/{id}/role", handlers.updateUserRole)
+	r.mux.HandleFunc("GET /api/v1/user/preferences", handlers.userPreferences)
+	r.mux.HandleFunc("PUT /api/v1/user/preferences", handlers.updateUserPreferences)
+
+	// Auth (PDF Page 9 & 10)
+	r.mux.HandleFunc("POST /api/v1/auth/login", handlers.login)
+	r.mux.HandleFunc("GET /api/v1/auth/me", handlers.me)
+
+	// Notifications (PDF Page 5 & 7)
+	r.mux.HandleFunc("GET /api/v1/notifications", handlers.listNotifications)
+	r.mux.HandleFunc("PATCH /api/v1/notifications/{id}/read", handlers.markNotificationRead)
+	r.mux.HandleFunc("POST /api/v1/notifications/read-all", handlers.markAllNotificationsRead)
 
 	return r
 }
@@ -59,14 +123,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !strings.HasPrefix(req.URL.Path, "/api/") && req.URL.Path != "/health" {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not_found"})
+	if !strings.HasPrefix(req.URL.Path, "/api/") &&
+		!strings.HasPrefix(req.URL.Path, "/task-") &&
+		req.URL.Path != "/health" {
+		writeError(w, http.StatusNotFound, "not_found", "Route not found")
 		return
 	}
-	r.mux.ServeHTTP(w, req)
-}
 
-func writeJSON(w http.ResponseWriter, status int, value any) {
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(value)
+	r.mux.ServeHTTP(w, req)
 }

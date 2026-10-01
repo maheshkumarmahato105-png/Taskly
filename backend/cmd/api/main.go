@@ -11,9 +11,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/taskly/task-manager/backend/internal/auth"
 	"github.com/taskly/task-manager/backend/internal/config"
+	"github.com/taskly/task-manager/backend/internal/configuration"
+	"github.com/taskly/task-manager/backend/internal/dashboard"
 	"github.com/taskly/task-manager/backend/internal/db"
 	"github.com/taskly/task-manager/backend/internal/httpapi"
+	"github.com/taskly/task-manager/backend/internal/notification"
+	"github.com/taskly/task-manager/backend/internal/task"
+	"github.com/taskly/task-manager/backend/internal/user"
 )
 
 func main() {
@@ -29,7 +35,22 @@ func main() {
 	}
 	defer pool.Close()
 
-	handlers := httpapi.NewHandlers(pool)
+	// Repositories
+	taskRepo := task.NewRepository(pool)
+	dashRepo := dashboard.NewRepository(pool)
+	confRepo := configuration.NewRepository(pool)
+	userRepo := user.NewRepository(pool)
+	notifRepo := notification.NewRepository(pool)
+
+	// Domain Services
+	taskSvc := task.NewService(taskRepo)
+	dashSvc := dashboard.NewService(dashRepo)
+	confSvc := configuration.NewService(confRepo)
+	userSvc := user.NewService(userRepo)
+	authSvc := auth.NewService(userSvc)
+	notifSvc := notification.NewService(notifRepo)
+
+	handlers := httpapi.NewHandlers(pool, taskSvc, dashSvc, confSvc, userSvc, authSvc, notifSvc)
 	router := httpapi.New(handlers, cfg.CORSOrigins)
 
 	server := &http.Server{
@@ -42,7 +63,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("task API listening on %s", server.Addr)
+		log.Printf("EasyMyLearning Task API listening on %s", server.Addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server failed: %v", err)
 		}

@@ -1,114 +1,521 @@
 openapi: 3.0.3
 info:
-  title: Taskly API
+  title: EasyMyLearning Task Manager REST API
+  description: Production-grade REST API backend for EasyMyLearning Task Manager microservice.
   version: 1.0.0
 servers:
   - url: http://localhost:8080
+    description: Local Docker / Go server
+  - url: https://api.easymylearning.com
+    description: Production environment
 paths:
   /health:
     get:
+      summary: Health check
+      description: Returns health status of API and PostgreSQL connection pool.
       responses:
-        "200": {description: OK}
+        "200":
+          description: Service healthy
+        "503":
+          description: Service degraded or database unavailable
+
   /api/v1/dashboard/summary:
     get:
+      summary: Dashboard KPI metrics
+      description: Aggregated counts for total, not started, in progress, completed, overdue tasks, and completion rate.
       responses:
-        "200": {description: Dashboard summary}
+        "200":
+          description: Summary KPI object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
   /api/v1/dashboard/upcoming:
     get:
+      summary: Upcoming deadline tasks
+      description: Returns upcoming incomplete tasks sorted by nearest due date.
       responses:
-        "200": {description: Upcoming tasks}
-  /api/v1/tasks:
-    get:
-      parameters:
-        - {name: search, in: query, schema: {type: string}}
-        - {name: status, in: query, schema: {type: string}}
-        - {name: category, in: query, schema: {type: string}}
-      responses:
-        "200": {description: Task list}
-    post:
-      requestBody:
-        required: true
-        content:
-          application/json: {schema: {$ref: "#/components/schemas/TaskInput"}}
-      responses:
-        "200": {description: Created task}
-  /api/v1/tasks/{id}:
-    parameters:
-      - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
-    get:
-      responses:
-        "200": {description: Task}
-    put:
-      requestBody:
-        required: true
-        content:
-          application/json: {schema: {$ref: "#/components/schemas/TaskInput"}}
-      responses:
-        "200": {description: Updated task}
-    delete:
-      responses:
-        "200": {description: Archived task}
-  /api/v1/tasks/{id}/status:
-    patch:
-      requestBody:
-        required: true
-        content:
-          application/json: {schema: {type: object, required: [statusId], properties: {statusId: {type: string, format: uuid}}}}
-      responses:
-        "200": {description: Updated task}
-  /api/v1/tasks/{id}/priority:
-    patch:
-      requestBody:
-        required: true
-        content:
-          application/json: {schema: {type: object, required: [priorityId], properties: {priorityId: {type: string, format: uuid}}}}
-      responses:
-        "200": {description: Updated task}
-  /api/v1/tasks/{id}/category:
-    patch:
-      requestBody:
-        required: true
-        content:
-          application/json: {schema: {type: object, required: [categoryId], properties: {categoryId: {type: string, format: uuid}}}}
-      responses:
-        "200": {description: Updated task}
-  /api/v1/tasks/{id}/due-date:
-    patch:
-      requestBody:
-        required: true
-        content:
-          application/json: {schema: {type: object, properties: {dueDate: {type: string, format: date, nullable: true}}}}
-      responses:
-        "200": {description: Updated task}
-  /api/v1/task-categories:
-    get:
-      responses:
-        "200": {description: Categories}
-  /api/v1/task-statuses:
-    get:
-      responses:
-        "200": {description: Statuses}
-  /api/v1/task-priorities:
-    get:
-      responses:
-        "200": {description: Priorities}
-  /api/v1/config/public:
-    get:
-      responses:
-        "200": {description: Public application configuration}
+        "200":
+          description: List of upcoming tasks
+
   /api/v1/dashboard/widgets:
     get:
+      summary: Dashboard configurable widgets
+      description: Returns widget layout and visibility configuration.
       responses:
-        "200": {description: Dashboard widgets}
+        "200":
+          description: List of active widgets
+
+  /api/v1/dashboard/widgets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      summary: Toggle dashboard widget visibility
+      responses:
+        "200":
+          description: Updated widget configuration
+    put:
+      summary: Update dashboard widget configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+                position: { type: integer }
+      responses:
+        "200":
+          description: Updated widget configuration
+
+  /api/v1/tasks:
+    get:
+      summary: List tasks
+      description: Returns tasks with support for search, status, category, priority, and overdue filtering.
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: priority
+          in: query
+          schema: { type: string }
+        - name: overdue
+          in: query
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: List of task records
+    post:
+      summary: Create new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Created task
+
+  /api/v1/tasks/bulk:
+    post:
+      summary: Bulk task operations
+      description: Batch update status, priority, category, or archive multiple tasks (PDF Page 7).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [taskIds, action]
+              properties:
+                taskIds:
+                  type: array
+                  items: { type: string }
+                action:
+                  type: string
+                  enum: [update_status, update_priority, update_category, archive]
+      responses:
+        "200":
+          description: Bulk action executed successfully
+
+  /api/v1/tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      summary: Get task details
+      responses:
+        "200":
+          description: Full task record with checklists, comments, and attachments
+    put:
+      summary: Update task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Updated task
+    delete:
+      summary: Archive task
+      responses:
+        "200":
+          description: Task soft-deleted
+
+  /api/v1/tasks/{id}/status:
+    patch:
+      summary: Inline status update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string }
+                statusId: { type: string }
+      responses:
+        "200":
+          description: Updated task
+
+  /api/v1/tasks/{id}/priority:
+    patch:
+      summary: Inline priority update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                priority: { type: string }
+                priorityId: { type: string }
+      responses:
+        "200":
+          description: Updated task
+
+  /api/v1/tasks/{id}/category:
+    patch:
+      summary: Inline category update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category: { type: string }
+                categoryId: { type: string }
+      responses:
+        "200":
+          description: Updated task
+
+  /api/v1/tasks/{id}/due-date:
+    patch:
+      summary: Inline due date update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dueDate: { type: string, format: date, nullable: true }
+      responses:
+        "200":
+          description: Updated task
+
+  /api/v1/tasks/{id}/checklists:
+    post:
+      summary: Add checklist item
+      responses:
+        "201":
+          description: Created checklist item
+
+  /api/v1/tasks/{id}/checklists/{cid}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+      - name: cid
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      summary: Toggle checklist completion
+      responses:
+        "200":
+          description: Updated checklist item
+    delete:
+      summary: Delete checklist item
+      responses:
+        "200":
+          description: Checklist deleted
+
+  /api/v1/tasks/{id}/comments:
+    get:
+      summary: List task comments
+      responses:
+        "200":
+          description: Comments list
+    post:
+      summary: Add task comment
+      responses:
+        "201":
+          description: Created comment
+
+  /api/v1/tasks/{id}/attachments:
+    get:
+      summary: List task attachments
+      responses:
+        "200":
+          description: Attachment metadata list
+    post:
+      summary: Add attachment metadata
+      responses:
+        "201":
+          description: Created attachment record
+
+  /api/v1/tasks/{id}/activity:
+    get:
+      summary: Task audit activity trail
+      responses:
+        "200":
+          description: Audit activity history
+
+  /api/v1/task-categories:
+    get:
+      summary: List task categories
+      responses:
+        "200":
+          description: Active task categories
+    post:
+      summary: Create new category
+      responses:
+        "201":
+          description: Created category
+
+  /api/v1/task-categories/reorder:
+    put:
+      summary: Reorder task categories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      sortOrder: { type: integer }
+      responses:
+        "200":
+          description: Categories reordered successfully
+
+  /api/v1/task-categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      summary: Update category
+      responses:
+        "200":
+          description: Updated category
+    delete:
+      summary: Deactivate category
+      responses:
+        "200":
+          description: Category deactivated
+
+  /api/v1/task-statuses:
+    get:
+      summary: List workflow statuses
+      responses:
+        "200":
+          description: Workflow statuses
+    post:
+      summary: Create new status
+      responses:
+        "201":
+          description: Created status
+
+  /api/v1/task-statuses/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      summary: Update status
+      responses:
+        "200":
+          description: Updated status
+    delete:
+      summary: Deactivate status
+      responses:
+        "200":
+          description: Status deactivated
+
+  /api/v1/task-priorities:
+    get:
+      summary: List priority levels
+      responses:
+        "200":
+          description: Priority levels
+
+  /api/v1/custom-fields:
+    get:
+      summary: List dynamic custom fields
+      responses:
+        "200":
+          description: Custom field definitions
+    post:
+      summary: Create custom field definition
+      responses:
+        "201":
+          description: Created custom field
+
+  /api/v1/config/public:
+    get:
+      summary: Public application configuration
+      responses:
+        "200":
+          description: Public branding and settings
+
+  /api/v1/settings:
+    get:
+      summary: All system settings
+      responses:
+        "200":
+          description: Full system configuration
+    put:
+      summary: Update system settings
+      responses:
+        "200":
+          description: Settings updated
+
+  /api/v1/audit-logs:
+    get:
+      summary: System-wide audit logs
+      responses:
+        "200":
+          description: Audit logs list
+
+  /api/v1/users:
+    get:
+      summary: List active users
+      responses:
+        "200":
+          description: User accounts
+    post:
+      summary: Create or invite new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                role: { type: string }
+      responses:
+        "201":
+          description: Created user account
+
+  /api/v1/users/{id}/role:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      summary: Update user RBAC role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { type: string }
+      responses:
+        "200":
+          description: Updated user account
+
+  /api/v1/roles:
+    get:
+      summary: List RBAC roles
+      responses:
+        "200":
+          description: List of available system roles and permissions
+
+  /api/v1/database/reset:
+    post:
+      summary: Reset database state to demo seed
+      responses:
+        "200":
+          description: Database successfully reset
+
+  /api/v1/auth/login:
+    post:
+      summary: User authentication
+      responses:
+        "200":
+          description: Active session with JWT token and role
+
+  /api/v1/notifications:
+    get:
+      summary: In-app notifications
+      responses:
+        "200":
+          description: Notifications feed
+
 components:
   schemas:
-    TaskInput:
+    DashboardSummary:
       type: object
-      required: [title, statusId, priorityId, categoryId]
       properties:
-        title: {type: string}
-        description: {type: string}
-        statusId: {type: string, format: uuid}
-        priorityId: {type: string, format: uuid}
-        categoryId: {type: string, format: uuid}
-        dueDate: {type: string, format: date, nullable: true}
+        totalTasks: { type: integer }
+        notStarted: { type: integer }
+        inProgress: { type: integer }
+        completed: { type: integer }
+        overdue: { type: integer }
+        completionRate: { type: integer }
+
+    CreateTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        statusId: { type: string }
+        priority: { type: string }
+        priorityId: { type: string }
+        category: { type: string }
+        categoryId: { type: string }
+        dueDate: { type: string, format: date, nullable: true }
+        assignee: { type: string }
+        checklists:
+          type: array
+          items: { type: string }
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        statusId: { type: string }
+        priority: { type: string }
+        priorityId: { type: string }
+        category: { type: string }
+        categoryId: { type: string }
+        dueDate: { type: string, format: date, nullable: true }
+        assignee: { type: string }
