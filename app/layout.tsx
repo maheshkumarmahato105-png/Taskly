@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import React from "react";
 import { ToastContainer } from "@/components/ui/Toast";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
       <body>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <ToastContainer />
       </body>
     </html>

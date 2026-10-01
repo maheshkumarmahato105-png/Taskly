@@ -23,10 +23,12 @@ import {
   addStoredAuditLog,
   DEFAULT_CATEGORIES,
   DEFAULT_STATUSES,
+  DEFAULT_USERS,
 } from "@/lib/store";
-import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask } from "@/types/task";
-import { Plus, Command } from "lucide-react";
+import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask, UserAccount } from "@/types/task";
+import { Plus, Command, ShieldAlert } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
+import { useAuth } from "@/context/AuthContext";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -36,6 +38,7 @@ function getGreeting(): string {
 }
 
 export default function HomePage() {
+  const { user: authUser, can, roleTitle } = useAuth();
   const [tasks, setTasks] = useState<Task[]>(() => {
     if (typeof window !== "undefined") return loadStoredTasks();
     return [];
@@ -48,6 +51,7 @@ export default function HomePage() {
     if (typeof window !== "undefined") return loadStoredCategories();
     return DEFAULT_CATEGORIES;
   });
+  const [users, setUsers] = useState<UserAccount[]>(() => DEFAULT_USERS);
   const [upcoming, setUpcoming] = useState<UpcomingTask[]>(() => {
     if (typeof window !== "undefined") {
       const stored = loadStoredTasks();
@@ -78,16 +82,18 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [taskRes, upcomingRes, statusRes, catRes] = await Promise.all([
+        const [taskRes, upcomingRes, statusRes, catRes, userRes] = await Promise.all([
           api.tasks(),
           api.upcoming(),
           api.statuses(),
           api.categories(),
+          api.users(),
         ]);
         if (taskRes?.items?.length) setTasks(taskRes.items);
         if (upcomingRes?.items?.length) setUpcoming(upcomingRes.items);
         if (statusRes?.items?.length) setStatuses(statusRes.items);
         if (catRes?.items?.length) setCategories(catRes.items);
+        if (userRes?.items?.length) setUsers(userRes.items);
       } catch {
         // Data already loaded synchronously from localStorage on mount.
       }
@@ -355,16 +361,37 @@ export default function HomePage() {
         <Topbar
           breadcrumbTitle="Task Manager Workspace"
           onHelpClick={() => setShortcutsModalOpen(true)}
+          userName={authUser?.name}
+          userRole={authUser?.roleTitle || roleTitle}
         />
 
         <main className="content-area">
           <div className="hero">
             <div>
               <div className="hero-tag" style={{ color: "#FFAA00" }}>EASYMYLEARNING TASK PLATFORM</div>
-              <h1 className="hero-title">{getGreeting()}, Bishal 👋</h1>
+              <h1 className="hero-title">{getGreeting()}, {authUser?.name || "Bishal"} 👋</h1>
               <p className="hero-desc">
                 Next.js + React frontend | Go backend | PostgreSQL | Docker | REST API
               </p>
+              {!can("tasks:create") && (
+                <div
+                  style={{
+                    marginTop: "10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "rgba(239, 68, 68, 0.12)",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    color: "#EF4444",
+                    fontWeight: 700,
+                  }}
+                >
+                  <ShieldAlert size={14} /> Read-Only Viewer mode (RBAC Policy Active)
+                </div>
+              )}
             </div>
             <div className="hero-controls">
               <button
@@ -374,15 +401,26 @@ export default function HomePage() {
               >
                 <Command size={15} /> Shortcuts
               </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setEditingTask(null);
-                  setModalOpen(true);
-                }}
-              >
-                <Plus size={16} /> New task
-              </button>
+              {can("tasks:create") ? (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEditingTask(null);
+                    setModalOpen(true);
+                  }}
+                >
+                  <Plus size={16} /> New task
+                </button>
+              ) : (
+                <button
+                  className="btn btn-secondary"
+                  disabled
+                  title="Viewer role cannot create tasks per RBAC"
+                  style={{ opacity: 0.6, cursor: "not-allowed" }}
+                >
+                  <Plus size={16} /> Read-Only
+                </button>
+              )}
             </div>
           </div>
 
@@ -506,14 +544,23 @@ export default function HomePage() {
         isOpen={Boolean(activeDrawerTask)}
         statuses={statuses}
         categories={categories}
+        users={users}
         onClose={() => setActiveDrawerTask(null)}
         onUpdate={updated => {
+          if (!can("tasks:edit")) {
+            toast.error("Read-Only Mode", "Viewer role cannot modify task properties.");
+            return;
+          }
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
           setActiveDrawerTask(updated);
           toast.success("Task Saved", `'${updated.title}' saved`);
           api.updateTask(updated.id, updated).catch(() => {});
         }}
         onDelete={task => {
+          if (!can("tasks:delete")) {
+            toast.error("Access Denied", "Viewer/Developer roles cannot delete tasks. Requires Manager or Lead Admin.");
+            return;
+          }
           setTasks(prev => prev.filter(t => t.id !== task.id));
           setActiveDrawerTask(null);
           toast.info("Task Deleted", `'${task.title}' deleted`);
@@ -526,6 +573,7 @@ export default function HomePage() {
         editingTask={editingTask}
         statuses={statuses}
         categories={categories}
+        users={users}
         onClose={() => {
           setModalOpen(false);
           setEditingTask(null);

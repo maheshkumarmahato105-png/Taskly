@@ -19,12 +19,15 @@ import {
   addStoredAuditLog,
   DEFAULT_CATEGORIES,
   DEFAULT_STATUSES,
+  DEFAULT_USERS,
 } from "@/lib/store";
-import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
-import { Plus, Command } from "lucide-react";
+import type { Lookup, Task, TaskPriority, TaskStatus, UserAccount } from "@/types/task";
+import { Plus, Command, ShieldAlert } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TasksPage() {
+  const { user: authUser, can, roleTitle } = useAuth();
   const [tasks, setTasks] = useState<Task[]>(() => {
     if (typeof window !== "undefined") return loadStoredTasks();
     return [];
@@ -37,6 +40,7 @@ export default function TasksPage() {
     if (typeof window !== "undefined") return loadStoredCategories();
     return DEFAULT_CATEGORIES;
   });
+  const [users, setUsers] = useState<UserAccount[]>(() => DEFAULT_USERS);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [currentFilter, setCurrentFilter] = useState("all");
@@ -53,14 +57,16 @@ export default function TasksPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [taskRes, statusRes, catRes] = await Promise.all([
+        const [taskRes, statusRes, catRes, userRes] = await Promise.all([
           api.tasks(),
           api.statuses(),
           api.categories(),
+          api.users(),
         ]);
         if (taskRes?.items?.length) setTasks(taskRes.items);
         if (statusRes?.items?.length) setStatuses(statusRes.items);
         if (catRes?.items?.length) setCategories(catRes.items);
+        if (userRes?.items?.length) setUsers(userRes.items);
       } catch (e) {
         // Data already loaded synchronously from localStorage on mount.
       } finally {
@@ -360,6 +366,8 @@ export default function TasksPage() {
         <Topbar
           breadcrumbTitle={sectionMeta.title}
           onHelpClick={() => setShortcutsModalOpen(true)}
+          userName={authUser?.name}
+          userRole={authUser?.roleTitle || roleTitle}
         />
 
         <main className="content-area">
@@ -368,20 +376,50 @@ export default function TasksPage() {
               <div className="hero-tag" style={{ color: "#FFAA00" }}>{sectionMeta.tag}</div>
               <h1 className="hero-title">{sectionMeta.title}</h1>
               <p className="hero-desc">{sectionMeta.desc}</p>
+              {!can("tasks:create") && (
+                <div
+                  style={{
+                    marginTop: "10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "rgba(239, 68, 68, 0.12)",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    color: "#EF4444",
+                    fontWeight: 700,
+                  }}
+                >
+                  <ShieldAlert size={14} /> Read-Only Viewer mode (RBAC Policy Active)
+                </div>
+              )}
             </div>
             <div className="hero-controls">
               <button className="btn btn-secondary" onClick={() => setShortcutsModalOpen(true)}>
                 <Command size={15} /> Shortcuts
               </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setEditingTask(null);
-                  setModalOpen(true);
-                }}
-              >
-                <Plus size={16} /> New task
-              </button>
+              {can("tasks:create") ? (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEditingTask(null);
+                    setModalOpen(true);
+                  }}
+                >
+                  <Plus size={16} /> New task
+                </button>
+              ) : (
+                <button
+                  className="btn btn-secondary"
+                  disabled
+                  title="Viewer role cannot create tasks per RBAC"
+                  style={{ opacity: 0.6, cursor: "not-allowed" }}
+                >
+                  <Plus size={16} /> Read-Only
+                </button>
+              )}
             </div>
           </div>
 
@@ -490,14 +528,23 @@ export default function TasksPage() {
         isOpen={Boolean(activeDrawerTask)}
         statuses={statuses}
         categories={categories}
+        users={users}
         onClose={() => setActiveDrawerTask(null)}
         onUpdate={updated => {
+          if (!can("tasks:edit")) {
+            toast.error("Read-Only Mode", "Viewer role cannot modify task properties.");
+            return;
+          }
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
           setActiveDrawerTask(updated);
           toast.success("Task Saved", `'${updated.title}' saved`);
           api.updateTask(updated.id, updated).catch(() => {});
         }}
         onDelete={task => {
+          if (!can("tasks:delete")) {
+            toast.error("Access Denied", "Viewer/Developer roles cannot delete tasks. Requires Manager or Lead Admin.");
+            return;
+          }
           setTasks(prev => prev.filter(t => t.id !== task.id));
           setActiveDrawerTask(null);
           toast.info("Task Deleted", `'${task.title}' deleted`);
@@ -510,6 +557,7 @@ export default function TasksPage() {
         editingTask={editingTask}
         statuses={statuses}
         categories={categories}
+        users={users}
         onClose={() => {
           setModalOpen(false);
           setEditingTask(null);

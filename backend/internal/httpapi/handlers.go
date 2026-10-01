@@ -93,7 +93,26 @@ func (h *Handlers) getTask(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, t)
 }
 
+func (h *Handlers) getCallerRole(r *http.Request) auth.Role {
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		if sess, err := h.authSvc.ValidateSession(token); err == nil && sess != nil {
+			return sess.Role
+		}
+	}
+	if roleHeader := r.Header.Get("X-User-Role"); roleHeader != "" {
+		return auth.ParseRole(roleHeader)
+	}
+	return auth.RoleAdmin
+}
+
 func (h *Handlers) createTask(w http.ResponseWriter, r *http.Request) {
+	if role := h.getCallerRole(r); role == auth.RoleViewer {
+		writeError(w, http.StatusForbidden, "forbidden", "Viewer role is read-only and cannot create tasks")
+		return
+	}
+
 	var req task.CreateTaskRequest
 	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json", "Failed to parse JSON body")
@@ -109,6 +128,11 @@ func (h *Handlers) createTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) updateTask(w http.ResponseWriter, r *http.Request) {
+	if role := h.getCallerRole(r); role == auth.RoleViewer {
+		writeError(w, http.StatusForbidden, "forbidden", "Viewer role is read-only and cannot update tasks")
+		return
+	}
+
 	id := r.PathValue("id")
 	var req task.UpdateTaskRequest
 	if err := decodeJSON(r, &req); err != nil {
@@ -125,6 +149,11 @@ func (h *Handlers) updateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) deleteTask(w http.ResponseWriter, r *http.Request) {
+	if role := h.getCallerRole(r); role == auth.RoleViewer {
+		writeError(w, http.StatusForbidden, "forbidden", "Viewer role is read-only and cannot delete tasks")
+		return
+	}
+
 	id := r.PathValue("id")
 	if err := h.taskSvc.Delete(r.Context(), id); err != nil {
 		writeError(w, http.StatusNotFound, "delete_failed", err.Error())
@@ -134,6 +163,11 @@ func (h *Handlers) deleteTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) bulkTasks(w http.ResponseWriter, r *http.Request) {
+	if role := h.getCallerRole(r); role == auth.RoleViewer {
+		writeError(w, http.StatusForbidden, "forbidden", "Viewer role is read-only and cannot execute bulk task actions")
+		return
+	}
+
 	var req task.BulkActionRequest
 	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json", "Failed to parse JSON body")
@@ -635,12 +669,34 @@ func (h *Handlers) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) me(w http.ResponseWriter, r *http.Request) {
-	session, err := h.authSvc.Login(r.Context(), "bishal@taskly.com", "")
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		if sess, err := h.authSvc.ValidateSession(token); err == nil && sess != nil {
+			writeJSON(w, http.StatusOK, sess)
+			return
+		}
+	}
+
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		email = "bishal@taskly.com"
+	}
+	session, err := h.authSvc.Login(r.Context(), email, "")
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "unauthorized", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, session)
+}
+
+func (h *Handlers) logout(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		h.authSvc.Logout(token)
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
 // Notifications
@@ -749,6 +805,11 @@ func (h *Handlers) createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) updateUserRole(w http.ResponseWriter, r *http.Request) {
+	if role := h.getCallerRole(r); role != auth.RoleAdmin {
+		writeError(w, http.StatusForbidden, "forbidden", "Only Lead Admin can modify user roles")
+		return
+	}
+
 	id := r.PathValue("id")
 	var body struct {
 		Role string `json:"role"`
@@ -767,6 +828,11 @@ func (h *Handlers) updateUserRole(w http.ResponseWriter, r *http.Request) {
 
 // Database Reset (PDF Page 11)
 func (h *Handlers) resetDatabase(w http.ResponseWriter, r *http.Request) {
+	if role := h.getCallerRole(r); role != auth.RoleAdmin {
+		writeError(w, http.StatusForbidden, "forbidden", "Only Lead Admin can reset the database")
+		return
+	}
+
 	if err := h.confSvc.ResetSeed(r.Context()); err != nil {
 		writeError(w, http.StatusInternalServerError, "reset_failed", err.Error())
 		return

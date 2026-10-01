@@ -12,6 +12,7 @@ import type {
   ChecklistItem,
   TaskComment,
   TaskAttachment,
+  AuthSession,
 } from "@/types/task";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
@@ -31,6 +32,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
   }
 
+  const authHeaders: Record<string, string> = {};
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("taskly_session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.token) authHeaders["Authorization"] = `Bearer ${parsed.token}`;
+        if (parsed.role) authHeaders["X-User-Role"] = parsed.role;
+      }
+    } catch (_) {}
+  }
+
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -41,6 +54,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       signal: init?.signal ?? controller.signal,
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
         ...(init?.headers ?? {}),
       },
       cache: "no-store",
@@ -203,6 +217,14 @@ export const api = {
   notifications: () => request<{ items: InAppNotification[] }>("/notifications"),
   markNotificationRead: (id: string) =>
     request<{ success: boolean }>(`/notifications/${id}/read`, { method: "PATCH" }),
+
+  // Authentication & Security (PDF Page 9)
+  login: (payload: { email: string; password?: string }) =>
+    request<AuthSession>("/auth/login", { method: "POST", body: JSON.stringify(payload) }),
+  me: (email?: string) =>
+    request<AuthSession>(email ? `/auth/me?email=${encodeURIComponent(email)}` : "/auth/me"),
+  logout: () =>
+    request<{ success: boolean }>("/auth/logout", { method: "POST" }),
 
   health: () => request<{ status: string; database?: string }>("/health"),
 };

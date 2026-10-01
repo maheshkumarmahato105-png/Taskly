@@ -76,6 +76,16 @@ export interface UserAccount {
   avatar?: string;
 }
 
+export interface AuthSession {
+  userId: string;
+  email: string;
+  name: string;
+  role: string;
+  roleTitle?: string;
+  token: string;
+  expiresAt: string;
+}
+
 export interface CustomFieldDefinition {
   id: string;
   name: string;

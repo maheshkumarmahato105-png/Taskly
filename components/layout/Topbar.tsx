@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Bell, Search, HelpCircle, ChevronDown, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, Search, HelpCircle, ChevronDown, Check, LogOut, Shield, User, ArrowRightLeft } from "lucide-react";
 import { BrandMark } from "@/components/ui/BrandLogo";
 import { loadStoredNotifications, saveStoredNotifications } from "@/lib/store";
+import { useAuth } from "@/context/AuthContext";
 import type { InAppNotification } from "@/types/task";
 
 interface TopbarProps {
@@ -20,12 +22,30 @@ export function Topbar({
   breadcrumbTitle = "Tasks Dashboard",
   onSearchClick,
   onHelpClick,
-  userName = "Bishal",
-  userRole = "Lead Admin",
-  userInitials = "BJ",
+  userName: propUserName,
+  userRole: propUserRole,
+  userInitials: propUserInitials,
 }: TopbarProps) {
+  const router = useRouter();
+  const { user: authUser, roleTitle, switchUser, logout } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const userName = authUser?.name || propUserName || "Bishal";
+  const userRole = authUser?.roleTitle || roleTitle || propUserRole || "Lead Admin";
+  const userInitials = propUserInitials || userName.split(" ").map(p => p[0]).join("").toUpperCase().slice(0, 2);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setNotifications(loadStoredNotifications());
@@ -234,16 +254,152 @@ export function Topbar({
           )}
         </div>
 
-        {/* User Menu */}
-        <div className="user-menu-btn">
-          <span className="user-avatar" style={{ background: "linear-gradient(135deg, #FFAA00, #E68A00)", color: "#1F2937" }}>
-            {userInitials}
-          </span>
-          <div className="user-meta">
-            <span className="user-meta-name">{userName}</span>
-            <span className="user-meta-role" style={{ color: "#E68A00" }}>{userRole}</span>
+        {/* User Menu & Role Switcher (PDF Page 9) */}
+        <div style={{ position: "relative" }} ref={userMenuRef}>
+          <div
+            className="user-menu-btn"
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            style={{ cursor: "pointer" }}
+            title="Click to view profile or switch active role"
+          >
+            <span className="user-avatar" style={{ background: "linear-gradient(135deg, #FFAA00, #E68A00)", color: "#1F2937" }}>
+              {userInitials}
+            </span>
+            <div className="user-meta">
+              <span className="user-meta-name">{userName}</span>
+              <span className="user-meta-role" style={{ color: "#E68A00", fontWeight: 700 }}>
+                {userRole}
+              </span>
+            </div>
+            <ChevronDown size={14} style={{ transform: userMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
           </div>
-          <ChevronDown size={14} />
+
+          {userMenuOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                right: 0,
+                marginTop: "8px",
+                width: "280px",
+                background: "#FFFFFF",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15)",
+                zIndex: 100,
+                padding: "0",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ padding: "12px 16px", background: "#FAFBFC", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ fontSize: "13px", fontWeight: 800, color: "#1E293B" }}>{userName}</div>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>{authUser?.email || "user@taskly.com"}</div>
+                <div style={{ marginTop: "6px" }}>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      padding: "2px 8px",
+                      borderRadius: "12px",
+                      background: "rgba(255, 170, 0, 0.15)",
+                      color: "#B45309",
+                      border: "1px solid rgba(255, 170, 0, 0.4)",
+                      display: "inline-block",
+                    }}
+                  >
+                    Role: {userRole}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Switch Profiles */}
+              <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ fontSize: "10px", fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <ArrowRightLeft size={11} /> Switch Role / Persona (PDF Page 9)
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {[
+                    { name: "Bishal (Lead Admin)", email: "bishal@taskly.com", role: "ADMIN" },
+                    { name: "Rahul (Project Manager)", email: "rahul@taskly.com", role: "MANAGER" },
+                    { name: "Anita (Full-Stack Dev)", email: "anita@taskly.com", role: "USER" },
+                    { name: "Priya (QA Engineer)", email: "priya@taskly.com", role: "USER" },
+                    { name: "Demo (Viewer - Read Only)", email: "viewer@taskly.com", role: "VIEWER" },
+                  ].map(p => (
+                    <button
+                      key={p.email}
+                      type="button"
+                      onClick={() => {
+                        void switchUser(p.email);
+                        setUserMenuOpen(false);
+                      }}
+                      style={{
+                        padding: "6px 8px",
+                        fontSize: "11px",
+                        textAlign: "left",
+                        background: authUser?.email === p.email ? "rgba(255, 170, 0, 0.1)" : "transparent",
+                        border: 0,
+                        borderRadius: "6px",
+                        color: authUser?.email === p.email ? "var(--brand-dark)" : "#334155",
+                        fontWeight: authUser?.email === p.email ? 700 : 500,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span>{p.name}</span>
+                      {authUser?.email === p.email && <Check size={12} color="#FFAA00" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ padding: "8px 12px", background: "#FAFBFC", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <Link
+                  href="/login"
+                  onClick={() => setUserMenuOpen(false)}
+                  style={{
+                    padding: "6px 8px",
+                    fontSize: "11px",
+                    color: "var(--brand-dark)",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <User size={13} /> Open Login Portal
+                </Link>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logout();
+                    setUserMenuOpen(false);
+                    router.push("/login");
+                  }}
+                  style={{
+                    padding: "6px 8px",
+                    fontSize: "11px",
+                    color: "#EF4444",
+                    fontWeight: 700,
+                    background: "none",
+                    border: 0,
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <LogOut size={13} /> Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

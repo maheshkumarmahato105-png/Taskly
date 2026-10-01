@@ -386,50 +386,95 @@ func (r *Repository) ResetSeed(ctx context.Context) error {
 		`, c.name, c.desc, c.icon, c.color, c.order)
 	}
 
-	// Reinsert demo tasks
+	// Ensure roles exist (PDF Page 5)
+	roles := []struct {
+		name, desc string
+	}{
+		{"ADMIN", "Full configuration and administration access"},
+		{"MANAGER", "Task management and team oversight"},
+		{"USER", "Standard task management access"},
+		{"VIEWER", "Read-only access"},
+	}
+	for _, r := range roles {
+		_, _ = tx.Exec(ctx, `
+			INSERT INTO roles (name, description)
+			VALUES ($1, $2)
+			ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description
+		`, r.name, r.desc)
+	}
+
+	// Ensure users and user_roles exist (PDF Page 5 & 6)
+	seedUsers := []struct {
+		name, email, role string
+	}{
+		{"Bishal Kumar Jaiswal", "bishal@taskly.com", "ADMIN"},
+		{"Rahul Mishra", "rahul@taskly.com", "MANAGER"},
+		{"Anita Sharma", "anita@taskly.com", "USER"},
+		{"Priya Sharma", "priya@taskly.com", "USER"},
+		{"Demo Viewer", "viewer@taskly.com", "VIEWER"},
+	}
+	for _, su := range seedUsers {
+		var uid string
+		err := tx.QueryRow(ctx, `
+			INSERT INTO users (name, email, is_active)
+			VALUES ($1, $2, TRUE)
+			ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, is_active = TRUE
+			RETURNING id
+		`, su.name, su.email).Scan(&uid)
+		if err == nil && uid != "" {
+			_, _ = tx.Exec(ctx, `
+				INSERT INTO user_roles (user_id, role_id)
+				SELECT $1, id FROM roles WHERE name = $2
+				ON CONFLICT DO NOTHING
+			`, uid, su.role)
+		}
+	}
+
+	// Reinsert demo tasks with task assignees (PDF Page 5 & 7)
 	demoTasks := []struct {
-		title, desc, status, priority, category string
-		daysOffset                              int
+		title, desc, status, priority, category, assigneeEmail string
+		daysOffset                                             int
 	}{
 		{
 			"Finalize Taskly content plan",
 			"Finalize the content calendar, topics, and publishing schedule for the next campaign.",
-			"IN_PROGRESS", "HIGH", "Marketing", 0,
+			"IN_PROGRESS", "HIGH", "Marketing", "anita@taskly.com", 0,
 		},
 		{
 			"Review student application documents",
 			"Verify all required academic and identity documents before submission.",
-			"NOT_STARTED", "MEDIUM", "Admissions", 0,
+			"NOT_STARTED", "MEDIUM", "Admissions", "rahul@taskly.com", 0,
 		},
 		{
 			"Prepare tomorrow's team meeting",
 			"Prepare agenda, discussion points, metrics, and action items.",
-			"COMPLETED", "HIGH", "Work", 0,
+			"COMPLETED", "HIGH", "Work", "bishal@taskly.com", 0,
 		},
 		{
 			"Update CRM lead tracking system",
 			"Add lead status rules, follow-up fields, and dashboard tracking improvements.",
-			"IN_PROGRESS", "MEDIUM", "Operations", 1,
+			"IN_PROGRESS", "MEDIUM", "Operations", "priya@taskly.com", 1,
 		},
 		{
 			"Follow up on pending approval",
 			"Follow up on the pending approval and document the response for the team.",
-			"NOT_STARTED", "HIGH", "Operations", -1,
+			"NOT_STARTED", "HIGH", "Operations", "bishal@taskly.com", -1,
 		},
 	}
 
 	for i, dt := range demoTasks {
 		_, _ = tx.Exec(ctx, `
-			INSERT INTO tasks (title, description, status_id, priority_id, category_id, due_date, sort_order)
+			INSERT INTO tasks (title, description, status_id, priority_id, category_id, assigned_to, due_date, sort_order)
 			VALUES (
 				$1, $2,
 				(SELECT id FROM task_statuses WHERE code = $3 LIMIT 1),
 				(SELECT id FROM task_priorities WHERE code = $4 LIMIT 1),
 				(SELECT id FROM task_categories WHERE name = $5 LIMIT 1),
-				CURRENT_DATE + $6 * INTERVAL '1 day',
-				$7
+				(SELECT id FROM users WHERE email = $6 LIMIT 1),
+				CURRENT_DATE + $7 * INTERVAL '1 day',
+				$8
 			)
-		`, dt.title, dt.desc, dt.status, dt.priority, dt.category, dt.daysOffset, i+1)
+		`, dt.title, dt.desc, dt.status, dt.priority, dt.category, dt.assigneeEmail, dt.daysOffset, i+1)
 	}
 
 	// Add audit log for the reset action

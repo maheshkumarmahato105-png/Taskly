@@ -95,6 +95,7 @@ func New(handlers *Handlers, corsOrigins []string) *Router {
 	// Auth (PDF Page 9 & 10)
 	r.mux.HandleFunc("POST /api/v1/auth/login", handlers.login)
 	r.mux.HandleFunc("GET /api/v1/auth/me", handlers.me)
+	r.mux.HandleFunc("POST /api/v1/auth/logout", handlers.logout)
 
 	// Notifications (PDF Page 5 & 7)
 	r.mux.HandleFunc("GET /api/v1/notifications", handlers.listNotifications)

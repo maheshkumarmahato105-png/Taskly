@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import type { Lookup, Task, TaskPriority, TaskStatus } from "@/types/task";
+import type { Lookup, Task, TaskPriority, TaskStatus, UserAccount } from "@/types/task";
 import { X, Hash, Calendar } from "lucide-react";
 
 interface TaskModalProps {
@@ -9,6 +9,7 @@ interface TaskModalProps {
   editingTask: Task | null;
   statuses: Lookup[];
   categories: Lookup[];
+  users?: UserAccount[];
   onClose: () => void;
   onSave: (payload: {
     title: string;
@@ -27,6 +28,7 @@ export function TaskModal({
   editingTask,
   statuses,
   categories,
+  users = [],
   onClose,
   onSave,
 }: TaskModalProps) {
@@ -187,10 +189,20 @@ export function TaskModal({
                   value={assignee}
                   onChange={e => setAssignee(e.target.value)}
                 >
-                  <option value="Bishal">Bishal (Lead Admin)</option>
-                  <option value="Anita">Anita (Full-Stack Dev)</option>
-                  <option value="Rahul">Rahul (Product Designer)</option>
-                  <option value="Priya">Priya (QA Engineer)</option>
+                  {users.length > 0 ? (
+                    users.map(u => (
+                      <option key={u.id} value={u.name}>
+                        {u.name} ({u.role})
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Bishal">Bishal (Lead Admin)</option>
+                      <option value="Anita">Anita (Full-Stack Dev)</option>
+                      <option value="Rahul">Rahul (Project Manager)</option>
+                      <option value="Priya">Priya (QA Engineer)</option>
+                    </>
+                  )}
                 </select>
               </div>
 

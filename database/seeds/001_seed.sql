@@ -10,8 +10,32 @@ ON CONFLICT(name) DO NOTHING;
 
 INSERT INTO users(name,email,is_active)
 VALUES
-  ('Bishal Kumar Jaiswal','bishal@taskly.com',TRUE)
-ON CONFLICT(email) DO NOTHING;
+  ('Bishal Kumar Jaiswal','bishal@taskly.com',TRUE),
+  ('Rahul Mishra','rahul@taskly.com',TRUE),
+  ('Anita Sharma','anita@taskly.com',TRUE),
+  ('Priya Sharma','priya@taskly.com',TRUE),
+  ('Demo Viewer','viewer@taskly.com',TRUE)
+ON CONFLICT(email) DO UPDATE SET name=EXCLUDED.name, is_active=TRUE;
+
+INSERT INTO user_roles(user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r WHERE u.email='bishal@taskly.com' AND r.name='ADMIN'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO user_roles(user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r WHERE u.email='rahul@taskly.com' AND r.name='MANAGER'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO user_roles(user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r WHERE u.email='anita@taskly.com' AND r.name='USER'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO user_roles(user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r WHERE u.email='priya@taskly.com' AND r.name='USER'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO user_roles(user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r WHERE u.email='viewer@taskly.com' AND r.name='VIEWER'
+ON CONFLICT DO NOTHING;
 
 INSERT INTO task_categories(name,description,icon,color,sort_order)
 VALUES
@@ -70,57 +94,62 @@ VALUES
 ON CONFLICT(setting_key) DO NOTHING;
 
 -- Demo tasks
-INSERT INTO tasks(title,description,status_id,priority_id,category_id,due_date,sort_order)
+INSERT INTO tasks(title,description,status_id,priority_id,category_id,assigned_to,due_date,sort_order)
 SELECT
   'Finalize Taskly content plan',
   'Finalize the content calendar, topics, and publishing schedule for the next campaign.',
   (SELECT id FROM task_statuses WHERE code='IN_PROGRESS'),
   (SELECT id FROM task_priorities WHERE code='HIGH'),
   (SELECT id FROM task_categories WHERE name='Marketing'),
+  (SELECT id FROM users WHERE email='anita@taskly.com'),
   CURRENT_DATE,
   1
 WHERE NOT EXISTS (SELECT 1 FROM tasks WHERE title='Finalize Taskly content plan');
 
-INSERT INTO tasks(title,description,status_id,priority_id,category_id,due_date,sort_order)
+INSERT INTO tasks(title,description,status_id,priority_id,category_id,assigned_to,due_date,sort_order)
 SELECT
   'Review student application documents',
   'Verify all required academic and identity documents before submission.',
   (SELECT id FROM task_statuses WHERE code='NOT_STARTED'),
   (SELECT id FROM task_priorities WHERE code='MEDIUM'),
   (SELECT id FROM task_categories WHERE name='Admissions'),
+  (SELECT id FROM users WHERE email='rahul@taskly.com'),
   CURRENT_DATE,
   2
 WHERE NOT EXISTS (SELECT 1 FROM tasks WHERE title='Review student application documents');
 
-INSERT INTO tasks(title,description,status_id,priority_id,category_id,due_date,sort_order)
+INSERT INTO tasks(title,description,status_id,priority_id,category_id,assigned_to,due_date,sort_order)
 SELECT
   'Prepare tomorrow''s team meeting',
   'Prepare agenda, discussion points, metrics, and action items.',
   (SELECT id FROM task_statuses WHERE code='COMPLETED'),
   (SELECT id FROM task_priorities WHERE code='HIGH'),
   (SELECT id FROM task_categories WHERE name='Work'),
+  (SELECT id FROM users WHERE email='bishal@taskly.com'),
   CURRENT_DATE,
   3
 WHERE NOT EXISTS (SELECT 1 FROM tasks WHERE title='Prepare tomorrow''s team meeting');
 
-INSERT INTO tasks(title,description,status_id,priority_id,category_id,due_date,sort_order)
+INSERT INTO tasks(title,description,status_id,priority_id,category_id,assigned_to,due_date,sort_order)
 SELECT
   'Update CRM lead tracking system',
   'Add lead status rules, follow-up fields, and dashboard tracking improvements.',
   (SELECT id FROM task_statuses WHERE code='IN_PROGRESS'),
   (SELECT id FROM task_priorities WHERE code='MEDIUM'),
   (SELECT id FROM task_categories WHERE name='Operations'),
+  (SELECT id FROM users WHERE email='priya@taskly.com'),
   CURRENT_DATE + 1,
   4
 WHERE NOT EXISTS (SELECT 1 FROM tasks WHERE title='Update CRM lead tracking system');
 
-INSERT INTO tasks(title,description,status_id,priority_id,category_id,due_date,sort_order)
+INSERT INTO tasks(title,description,status_id,priority_id,category_id,assigned_to,due_date,sort_order)
 SELECT
   'Follow up on pending approval',
   'Follow up on the pending approval and document the response for the team.',
   (SELECT id FROM task_statuses WHERE code='NOT_STARTED'),
   (SELECT id FROM task_priorities WHERE code='HIGH'),
   (SELECT id FROM task_categories WHERE name='Operations'),
+  (SELECT id FROM users WHERE email='bishal@taskly.com'),
   CURRENT_DATE - 1,
   5
 WHERE NOT EXISTS (SELECT 1 FROM tasks WHERE title='Follow up on pending approval');

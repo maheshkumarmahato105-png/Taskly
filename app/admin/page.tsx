@@ -12,6 +12,8 @@ import { RolesManager } from "@/components/admin/RolesManager";
 import { DatabaseOperations } from "@/components/admin/DatabaseOperations";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
 import { toast } from "@/components/ui/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { ShieldAlert } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   loadStoredCategories,
@@ -41,6 +43,7 @@ import type {
 } from "@/types/task";
 
 export default function AdminPage() {
+  const { user: authUser, can, roleTitle } = useAuth();
   const [categories, setCategories] = useState<Lookup[]>(() => {
     if (typeof window !== "undefined") return loadStoredCategories();
     return [];
@@ -184,9 +187,33 @@ export default function AdminPage() {
         <Topbar
           breadcrumbTitle="Admin Configuration Console"
           onHelpClick={() => setShortcutsModalOpen(true)}
+          userName={authUser?.name}
+          userRole={authUser?.roleTitle || roleTitle}
         />
 
         <main className="content-area">
+          {!can("admin:access") && (
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "14px 18px",
+                background: "rgba(245, 158, 11, 0.1)",
+                border: "1px solid rgba(245, 158, 11, 0.35)",
+                borderRadius: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                fontSize: "13px",
+                color: "#B45309",
+              }}
+            >
+              <ShieldAlert size={20} />
+              <div>
+                <strong>Restricted Role Mode ({roleTitle}):</strong> You have read-only administrative inspection access. Modifying categories, custom fields, user roles, and database state is restricted to Lead Admin per PDF Page 9 & 10 RBAC policy.
+              </div>
+            </div>
+          )}
+
           <div className="hero">
             <div>
               <div className="hero-tag">CONFIGURABLE SYSTEM GOVERNANCE (PDF PAGE 6)</div>

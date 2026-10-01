@@ -349,6 +349,38 @@ export const serverDb = {
     { id: "r6", name: "Viewer", description: "Read-only access across workspace tasks and boards" },
   ],
 
+  login: (email?: string, password?: string): AuthSession => {
+    const users = globalStore.__eml_users!;
+    let u = users.find(user => email && user.email.toLowerCase() === email.toLowerCase());
+    if (!u) {
+      u = users.find(user => email && user.name.toLowerCase().includes(email.toLowerCase()));
+    }
+    if (!u) {
+      u = users[0] || {
+        id: "usr-1",
+        name: "Bishal Kumar Jaiswal",
+        email: email || "bishal@taskly.com",
+        role: "Lead Admin",
+        status: "Active",
+        avatar: "BJ",
+      };
+    }
+    let roleCode = "USER";
+    if (u.role.includes("Admin") || u.role.includes("Lead")) roleCode = "ADMIN";
+    else if (u.role.includes("Manager")) roleCode = "MANAGER";
+    else if (u.role.includes("Viewer")) roleCode = "VIEWER";
+
+    return {
+      userId: u.id,
+      email: u.email,
+      name: u.name,
+      role: roleCode,
+      roleTitle: u.role,
+      token: "tok_" + Buffer.from(u.id + ":" + Date.now()).toString("hex"),
+      expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    };
+  },
+
   getCustomFields: () => globalStore.__eml_custom_fields!,
   createCustomField: (cf: Partial<CustomFieldDefinition>): CustomFieldDefinition => {
     const item: CustomFieldDefinition = {

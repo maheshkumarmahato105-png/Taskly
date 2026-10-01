@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Lookup, Task, TaskPriority, TaskStatus, TaskAttachment } from "@/types/task";
+import type { Lookup, Task, TaskPriority, TaskStatus, TaskAttachment, UserAccount } from "@/types/task";
 import { X, Check, Paperclip, Plus, Trash2, Calendar, Hash, Clock } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 
@@ -10,6 +10,7 @@ interface TaskDrawerProps {
   isOpen: boolean;
   statuses: Lookup[];
   categories: Lookup[];
+  users?: UserAccount[];
   onClose: () => void;
   onUpdate: (updated: Task) => void;
   onDelete: (task: Task) => void;
@@ -20,6 +21,7 @@ export function TaskDrawer({
   isOpen,
   statuses,
   categories,
+  users = [],
   onClose,
   onUpdate,
   onDelete,
@@ -209,10 +211,20 @@ export function TaskDrawer({
                 value={task.assignee || "Bishal"}
                 onChange={e => updateField("assignee", e.target.value, true)}
               >
-                <option value="Bishal">Bishal (Lead Admin)</option>
-                <option value="Anita">Anita (Full-Stack Dev)</option>
-                <option value="Rahul">Rahul (Product Designer)</option>
-                <option value="Priya">Priya (QA Engineer)</option>
+                {users.length > 0 ? (
+                  users.map(u => (
+                    <option key={u.id} value={u.name}>
+                      {u.name} ({u.role})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Bishal">Bishal (Lead Admin)</option>
+                    <option value="Anita">Anita (Full-Stack Dev)</option>
+                    <option value="Rahul">Rahul (Project Manager)</option>
+                    <option value="Priya">Priya (QA Engineer)</option>
+                  </>
+                )}
               </select>
             </div>
 
