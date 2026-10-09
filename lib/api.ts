@@ -15,22 +15,36 @@ import type {
   AuthSession,
 } from "@/types/task";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
+function resolveApiUrl(path: string): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // If running in browser on HTTPS or production domain (e.g. Vercel, Netlify, custom domain):
+  if (typeof window !== "undefined") {
+    const isHttps = window.location.protocol === "https:";
+    const isNotLocal = !window.location.hostname.includes("localhost") && !window.location.hostname.includes("127.0.0.1");
+    const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+    const baseIsLocalhost = configuredBase.includes("localhost") || configuredBase.includes("127.0.0.1");
+
+    if (isHttps || isNotLocal) {
+      if (!configuredBase || baseIsLocalhost) {
+        // Fall back directly to the same-origin Next.js full-stack API route
+        return `/api/v1${path}`;
+      }
+    }
+  }
+
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
+  return `${base}${path}`;
+}
 
 let isBackendOffline = false;
 let lastOfflineCheck = 0;
 const OFFLINE_RETRY_MS = 15000;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  if (typeof window !== "undefined") {
-    if (window.location.protocol === "https:" && API_BASE.startsWith("http://localhost")) {
-      throw new Error("Mixed content skipped on HTTPS");
-    }
-    const now = Date.now();
-    if (isBackendOffline && now - lastOfflineCheck < OFFLINE_RETRY_MS) {
-      throw new Error("Backend offline; using local state engine");
-    }
-  }
+  const url = resolveApiUrl(path);
 
   const authHeaders: Record<string, string> = {};
   if (typeof window !== "undefined") {
@@ -44,9 +58,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch (_) {}
   }
 
-  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
     const response = await fetch(url, {
@@ -67,8 +80,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     isBackendOffline = false;
     return await response.json();
   } catch (err) {
-    // If external backend at http://localhost:8080 fails, attempt local Next.js /api/v1 route
-    if (API_BASE.startsWith("http") && !path.startsWith("http")) {
+    // If external backend request fails, attempt local Next.js /api/v1 route
+    if (url.startsWith("http") && !path.startsWith("http")) {
       try {
         const localUrl = `/api/v1${path}`;
         const localRes = await fetch(localUrl, {

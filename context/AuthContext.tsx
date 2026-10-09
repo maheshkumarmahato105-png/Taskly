@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const can = useCallback((action: string): boolean => {
-    if (!user) return false;
+    if (!user) return action === "tasks:read";
     const r = user.role.toUpperCase();
     switch (action) {
       case "admin:access":
@@ -123,8 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const role = user?.role || "USER";
-  const roleTitle = user?.roleTitle || (role === "ADMIN" ? "Lead Admin" : role === "MANAGER" ? "Project Manager" : role === "VIEWER" ? "Viewer" : "Full-Stack Dev");
+  const role = user?.role || "GUEST";
+  const roleTitle = user?.roleTitle || (user ? (role === "ADMIN" ? "Lead Admin" : role === "MANAGER" ? "Project Manager" : role === "VIEWER" ? "Viewer" : "Full-Stack Dev") : "Guest (Sign In)");
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, switchUser, can, role, roleTitle }}>

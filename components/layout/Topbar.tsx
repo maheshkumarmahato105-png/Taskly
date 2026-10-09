@@ -255,24 +255,69 @@ export function Topbar({
         </div>
 
         {/* User Menu & Role Switcher (PDF Page 9) */}
-        <div style={{ position: "relative" }} ref={userMenuRef}>
-          <div
-            className="user-menu-btn"
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            style={{ cursor: "pointer" }}
-            title="Click to view profile or switch active role"
+        {!authUser ? (
+          <Link
+            href="/login"
+            className="topbar-signin-btn"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "7px 14px",
+              fontSize: "12px",
+              fontWeight: 800,
+              background: "linear-gradient(135deg, #FFAA00, #E68A00)",
+              color: "#1F2937",
+              borderRadius: "8px",
+              textDecoration: "none",
+              boxShadow: "0 2px 8px rgba(255, 170, 0, 0.3)",
+              transition: "transform 0.15s ease",
+            }}
           >
-            <span className="user-avatar" style={{ background: "linear-gradient(135deg, #FFAA00, #E68A00)", color: "#1F2937" }}>
-              {userInitials}
-            </span>
-            <div className="user-meta">
-              <span className="user-meta-name">{userName}</span>
-              <span className="user-meta-role" style={{ color: "#E68A00", fontWeight: 700 }}>
-                {userRole}
-              </span>
-            </div>
-            <ChevronDown size={14} style={{ transform: userMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
-          </div>
+            <Shield size={14} />
+            <span>Sign In</span>
+          </Link>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Link
+              href="/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "4px 10px",
+                background: "rgba(255, 170, 0, 0.12)",
+                border: "1px solid rgba(255, 170, 0, 0.35)",
+                borderRadius: "14px",
+                fontSize: "11px",
+                fontWeight: 700,
+                color: "#B45309",
+                textDecoration: "none",
+              }}
+              title="Auth & RBAC Security Portal (PDF Page 9)"
+            >
+              <Shield size={12} color="#FFAA00" />
+              <span>Auth: {userRole}</span>
+            </Link>
+
+            <div style={{ position: "relative" }} ref={userMenuRef}>
+              <div
+                className="user-menu-btn"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                style={{ cursor: "pointer" }}
+                title="Click to view profile or switch active role"
+              >
+                <span className="user-avatar" style={{ background: "linear-gradient(135deg, #FFAA00, #E68A00)", color: "#1F2937" }}>
+                  {userInitials}
+                </span>
+                <div className="user-meta">
+                  <span className="user-meta-name">{userName}</span>
+                  <span className="user-meta-role" style={{ color: "#E68A00", fontWeight: 700 }}>
+                    {userRole}
+                  </span>
+                </div>
+                <ChevronDown size={14} style={{ transform: userMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
+              </div>
 
           {userMenuOpen && (
             <div
@@ -400,7 +445,9 @@ export function Topbar({
               </div>
             </div>
           )}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

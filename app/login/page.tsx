@@ -89,16 +89,38 @@ export default function LoginPage() {
       }}
     >
       <div style={{ maxWidth: "460px", width: "100%", margin: "0 auto" }}>
+        {/* Navigation back */}
+        <div style={{ marginBottom: "20px" }}>
+          <Link
+            href="/tasks"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              color: "#94A3B8",
+              fontSize: "12px",
+              textDecoration: "none",
+              fontWeight: 600,
+              padding: "6px 12px",
+              background: "rgba(255, 255, 255, 0.05)",
+              borderRadius: "8px",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+            }}
+          >
+            ← Return to Tasks Workspace
+          </Link>
+        </div>
+
         {/* Brand Header */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ display: "inline-block", marginBottom: "12px" }}>
             <BrandLogo size={42} />
           </div>
           <h1 style={{ fontSize: "24px", fontWeight: 800, margin: "8px 0 4px", letterSpacing: "-0.5px" }}>
-            Authentication & Security Portal
+            Authentication &amp; Security Portal
           </h1>
           <p style={{ color: "#94A3B8", fontSize: "13px", margin: 0 }}>
-            EasyMyLearning Task Manager • Architecture & Deployment Blueprint (PDF Page 9)
+            EasyMyLearning Task Manager • Architecture &amp; Deployment Blueprint (PDF Page 9)
           </p>
         </div>
 

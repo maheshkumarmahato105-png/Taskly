@@ -21,7 +21,7 @@ const exePath = path.join(backendDir, "api.exe");
 let backendCmd, backendArgs;
 
 if (fs.existsSync(exePath)) {
-  backendCmd = exePath;
+  backendCmd = process.platform === "win32" ? ".\\api.exe" : "./api";
   backendArgs = [];
 } else {
   backendCmd = "go";
@@ -41,7 +41,8 @@ const backendProc = spawn(backendCmd, backendArgs, {
 });
 
 console.log(`[System] Starting Next.js Frontend in ${rootDir}...`);
-const frontendProc = spawn("npm.cmd", ["run", "dev"], {
+const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+const frontendProc = spawn(npmCmd, ["run", "dev"], {
   cwd: rootDir,
   shell: true,
   stdio: "inherit",
@@ -51,15 +52,23 @@ function cleanup() {
   console.log("\n[System] Gracefully shutting down full-stack application...");
   try {
     if (backendProc && !backendProc.killed) {
-      backendProc.kill("SIGTERM");
+      if (process.platform === "win32") {
+        spawn("taskkill", ["/pid", backendProc.pid.toString(), "/f", "/t"]);
+      } else {
+        backendProc.kill("SIGTERM");
+      }
     }
   } catch (_) {}
   try {
     if (frontendProc && !frontendProc.killed) {
-      frontendProc.kill("SIGTERM");
+      if (process.platform === "win32") {
+        spawn("taskkill", ["/pid", frontendProc.pid.toString(), "/f", "/t"]);
+      } else {
+        frontendProc.kill("SIGTERM");
+      }
     }
   } catch (_) {}
-  process.exit(0);
+  setTimeout(() => process.exit(0), 500);
 }
 
 process.on("SIGINT", cleanup);

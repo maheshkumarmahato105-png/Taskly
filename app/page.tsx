@@ -26,7 +26,8 @@ import {
   DEFAULT_USERS,
 } from "@/lib/store";
 import type { Lookup, Task, TaskPriority, TaskStatus, UpcomingTask, UserAccount } from "@/types/task";
-import { Plus, Command, ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { Plus, Command, ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 
@@ -373,25 +374,47 @@ export default function HomePage() {
               <p className="hero-desc">
                 Next.js + React frontend | Go backend | PostgreSQL | Docker | REST API
               </p>
-              {!can("tasks:create") && (
-                <div
+              <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <Link
+                  href="/login"
                   style={{
-                    marginTop: "10px",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
-                    background: "rgba(239, 68, 68, 0.12)",
-                    border: "1px solid rgba(239, 68, 68, 0.3)",
                     padding: "4px 10px",
-                    borderRadius: "6px",
-                    fontSize: "11px",
-                    color: "#EF4444",
+                    borderRadius: "14px",
+                    background: "rgba(255, 170, 0, 0.12)",
+                    border: "1px solid rgba(255, 170, 0, 0.35)",
+                    fontSize: "12px",
                     fontWeight: 700,
+                    color: "var(--ink)",
+                    textDecoration: "none",
                   }}
+                  title="Switch Persona / Open Auth Portal (PDF Page 9)"
                 >
-                  <ShieldAlert size={14} /> Read-Only Viewer mode (RBAC Policy Active)
-                </div>
-              )}
+                  <ShieldCheck size={14} color="#FFAA00" />
+                  <span>Auth: {authUser?.roleTitle || roleTitle}</span>
+                  <span style={{ color: "var(--muted)", fontWeight: 500, fontSize: "11px" }}>• Switch / Sign In</span>
+                </Link>
+                {!can("tasks:create") && (
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "rgba(239, 68, 68, 0.12)",
+                      border: "1px solid rgba(239, 68, 68, 0.3)",
+                      padding: "4px 10px",
+                      borderRadius: "14px",
+                      fontSize: "11px",
+                      color: "#EF4444",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <ShieldAlert size={14} /> Read-Only Viewer (RBAC Active)
+                  </div>
+                )}
+              </div>
             </div>
             <div className="hero-controls">
               <button

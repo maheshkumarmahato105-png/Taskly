@@ -9,6 +9,7 @@ import {
   CalendarClock,
   ListChecks,
   ShieldAlert,
+  ShieldCheck,
   Settings,
   LayoutGrid,
   Layers,
@@ -258,10 +259,17 @@ export function Sidebar({
           </nav>
         </div>
 
-        {/* Administration */}
+        {/* Administration & Security */}
         <div className="nav-group">
-          <div className="nav-label">Administration</div>
+          <div className="nav-label">Administration &amp; Access</div>
           <nav className="nav-list">
+            <Link href="/login" className={`nav-item ${isNavActive("/login") ? "active" : ""}`} title="Sign In, Demo Switcher & RBAC">
+              <span className="nav-icon"><ShieldCheck size={17} color="#FFAA00" /></span>
+              <span className="nav-title">Auth &amp; Security</span>
+              <span className="nav-badge" style={{ background: "rgba(255, 170, 0, 0.15)", color: "#B45309", fontWeight: 800 }}>
+                RBAC
+              </span>
+            </Link>
             <Link href="/admin" className={`nav-item ${isNavActive("/admin") ? "active" : ""}`}>
               <span className="nav-icon"><Layers size={17} /></span>
               <span className="nav-title">Admin Console</span>
@@ -321,6 +329,11 @@ export function Sidebar({
         <Link href="/admin" className={`mobile-nav-item ${isNavActive("/admin") ? "active" : ""}`} title="Admin Console">
           <div className="mobile-nav-icon"><Layers size={18} /></div>
           <span className="mobile-nav-text">Admin</span>
+        </Link>
+
+        <Link href="/login" className={`mobile-nav-item ${isNavActive("/login") ? "active" : ""}`} title="Auth & RBAC">
+          <div className="mobile-nav-icon"><ShieldCheck size={18} color="#FFAA00" /></div>
+          <span className="mobile-nav-text">Auth</span>
         </Link>
 
         <Link href="/settings" className={`mobile-nav-item ${isNavActive("/settings") ? "active" : ""}`} title="Preferences">

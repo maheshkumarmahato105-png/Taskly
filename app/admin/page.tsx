@@ -11,9 +11,10 @@ import { WidgetsManager } from "@/components/admin/WidgetsManager";
 import { RolesManager } from "@/components/admin/RolesManager";
 import { DatabaseOperations } from "@/components/admin/DatabaseOperations";
 import { ShortcutsModal } from "@/components/layout/ShortcutsModal";
+import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   loadStoredCategories,
@@ -221,6 +222,29 @@ export default function AdminPage() {
               <p className="hero-desc">
                 Configure statuses, priorities, task categories, dashboard widgets, branding, and custom fields without rebuilding.
               </p>
+              <div style={{ marginTop: "12px", display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                <Link
+                  href="/login"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "linear-gradient(135deg, #FFAA00, #E68A00)",
+                    color: "#1E293B",
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    boxShadow: "0 2px 8px rgba(255, 170, 0, 0.3)",
+                  }}
+                >
+                  <ShieldCheck size={14} /> Open Auth &amp; RBAC Portal
+                </Link>
+                <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+                  Current Session: <strong>{authUser?.name || "Bishal"}</strong> ({authUser?.roleTitle || roleTitle})
+                </span>
+              </div>
             </div>
           </div>
 
