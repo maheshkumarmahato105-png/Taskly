@@ -102,22 +102,46 @@ taskly/
 
 ## 🚀 Quick Start Guide
 
-### Option 1: Frontend Development (Next.js & TypeScript)
+### Option 1: One-Command Full Stack (Recommended)
+Starts both the **Go REST API (with automatic PostgreSQL database)** and the **Next.js Frontend**:
 ```bash
-cd frontend
-npm install
+npm run dev:all
+```
+Or use the native Windows scripts:
+- **PowerShell**: `.\scripts\start-all.ps1`
+- **Batch**: `.\scripts\start-all.bat`
+
+Once running:
+- **Frontend App**: [http://localhost:3000](http://localhost:3000)
+- **Go REST API**: [http://localhost:8080](http://localhost:8080)
+- **API Health**: [http://localhost:8080/health](http://localhost:8080/health)
+- **Database**: PostgreSQL (Auto-migrated & persisted in `database/pg_data`)
+
+---
+
+### Option 2: Go Backend Only
+Starts the Go 1.22+ REST microservice with automatic embedded PostgreSQL and seed data:
+```bash
+npm run backend
+```
+*(Or directly `cd backend && go run ./cmd/api`)*
+
+---
+
+### Option 3: Frontend Development Only
+Starts the Next.js frontend on port 3000 with automatic fallback to persistent database storage in `database/data/taskly_store.json`:
+```bash
 npm run dev
 ```
-Open **http://localhost:3000** in your browser.
 
-### Option 2: Docker Compose (Full Stack)
+---
+
+### Option 4: Docker Compose (Containers)
+If Docker Desktop is installed:
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
-- **Frontend**: `http://localhost:3000`
-- **Go API**: `http://localhost:8080`
-- **API Health**: `http://localhost:8080/health`
 
 ---
 

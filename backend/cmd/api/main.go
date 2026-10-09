@@ -24,16 +24,14 @@ import (
 
 func main() {
 	cfg := config.Load()
-	if cfg.DatabaseURL == "" {
-		log.Fatal("DATABASE_URL is required")
-	}
 
 	ctx := context.Background()
-	pool, err := db.Open(ctx, cfg.DatabaseURL)
+	dbHandle, err := db.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)
 	}
-	defer pool.Close()
+	defer dbHandle.Close()
+	pool := dbHandle.Pool
 
 	// Repositories
 	taskRepo := task.NewRepository(pool)

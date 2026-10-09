@@ -23,7 +23,9 @@ backend/bin/
 *.exe
 *.test
 
-# Database backups & local dumps
+# Database local data & backups
+database/pg_data/
+database/data/
 backups/*.sql
 backups/*.json
 

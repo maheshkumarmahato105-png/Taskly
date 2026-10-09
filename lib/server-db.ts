@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import type {
   Task,
   Lookup,
@@ -12,6 +14,7 @@ import type {
   ChecklistItem,
   TaskComment,
   TaskAttachment,
+  AuthSession,
 } from "@/types/task";
 import {
   DEFAULT_CATEGORIES,
@@ -41,16 +44,67 @@ const globalStore = global as unknown as {
   __eml_audit_logs?: AuditLogItem[];
 };
 
-if (!globalStore.__eml_tasks) globalStore.__eml_tasks = getInitialTasks();
-if (!globalStore.__eml_categories) globalStore.__eml_categories = [...DEFAULT_CATEGORIES];
-if (!globalStore.__eml_statuses) globalStore.__eml_statuses = [...DEFAULT_STATUSES];
-if (!globalStore.__eml_priorities) globalStore.__eml_priorities = [...DEFAULT_PRIORITIES];
-if (!globalStore.__eml_settings) globalStore.__eml_settings = { ...DEFAULT_SETTINGS };
-if (!globalStore.__eml_users) globalStore.__eml_users = [...DEFAULT_USERS];
-if (!globalStore.__eml_custom_fields) globalStore.__eml_custom_fields = [...DEFAULT_CUSTOM_FIELDS];
-if (!globalStore.__eml_widgets) globalStore.__eml_widgets = [...DEFAULT_WIDGETS];
-if (!globalStore.__eml_notifications) globalStore.__eml_notifications = [...DEFAULT_NOTIFICATIONS];
-if (!globalStore.__eml_audit_logs) globalStore.__eml_audit_logs = [...DEFAULT_AUDIT_LOGS];
+const DATA_FILE = path.join(process.cwd(), "database", "data", "taskly_store.json");
+
+function loadFromDisk(): boolean {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, "utf-8");
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.tasks)) globalStore.__eml_tasks = data.tasks;
+      if (Array.isArray(data.categories)) globalStore.__eml_categories = data.categories;
+      if (Array.isArray(data.statuses)) globalStore.__eml_statuses = data.statuses;
+      if (Array.isArray(data.priorities)) globalStore.__eml_priorities = data.priorities;
+      if (data.settings) globalStore.__eml_settings = data.settings;
+      if (Array.isArray(data.users)) globalStore.__eml_users = data.users;
+      if (Array.isArray(data.customFields)) globalStore.__eml_custom_fields = data.customFields;
+      if (Array.isArray(data.widgets)) globalStore.__eml_widgets = data.widgets;
+      if (Array.isArray(data.notifications)) globalStore.__eml_notifications = data.notifications;
+      if (Array.isArray(data.auditLogs)) globalStore.__eml_audit_logs = data.auditLogs;
+      return true;
+    }
+  } catch (err) {
+    console.warn("[serverDb] Warning reading taskly_store.json:", err);
+  }
+  return false;
+}
+
+function persistToDisk() {
+  try {
+    const dir = path.dirname(DATA_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const payload = {
+      tasks: globalStore.__eml_tasks,
+      categories: globalStore.__eml_categories,
+      statuses: globalStore.__eml_statuses,
+      priorities: globalStore.__eml_priorities,
+      settings: globalStore.__eml_settings,
+      users: globalStore.__eml_users,
+      customFields: globalStore.__eml_custom_fields,
+      widgets: globalStore.__eml_widgets,
+      notifications: globalStore.__eml_notifications,
+      auditLogs: globalStore.__eml_audit_logs,
+      lastSaved: new Date().toISOString(),
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[serverDb] Warning persisting to taskly_store.json:", err);
+  }
+}
+
+if (!loadFromDisk()) {
+  if (!globalStore.__eml_tasks) globalStore.__eml_tasks = getInitialTasks();
+  if (!globalStore.__eml_categories) globalStore.__eml_categories = [...DEFAULT_CATEGORIES];
+  if (!globalStore.__eml_statuses) globalStore.__eml_statuses = [...DEFAULT_STATUSES];
+  if (!globalStore.__eml_priorities) globalStore.__eml_priorities = [...DEFAULT_PRIORITIES];
+  if (!globalStore.__eml_settings) globalStore.__eml_settings = { ...DEFAULT_SETTINGS };
+  if (!globalStore.__eml_users) globalStore.__eml_users = [...DEFAULT_USERS];
+  if (!globalStore.__eml_custom_fields) globalStore.__eml_custom_fields = [...DEFAULT_CUSTOM_FIELDS];
+  if (!globalStore.__eml_widgets) globalStore.__eml_widgets = [...DEFAULT_WIDGETS];
+  if (!globalStore.__eml_notifications) globalStore.__eml_notifications = [...DEFAULT_NOTIFICATIONS];
+  if (!globalStore.__eml_audit_logs) globalStore.__eml_audit_logs = [...DEFAULT_AUDIT_LOGS];
+  persistToDisk();
+}
 
 export const serverDb = {
   // Tasks
@@ -101,6 +155,7 @@ export const serverDb = {
     };
     globalStore.__eml_tasks!.unshift(newTask);
     serverDb.addAuditLog("TASK_CREATED", `Task '${newTask.title}' created`);
+    persistToDisk();
     return newTask;
   },
 
@@ -113,6 +168,7 @@ export const serverDb = {
       updatedAt: new Date().toISOString(),
     };
     serverDb.addAuditLog("TASK_UPDATED", `Task '${globalStore.__eml_tasks![idx].title}' updated`);
+    persistToDisk();
     return globalStore.__eml_tasks![idx];
   },
 
@@ -121,6 +177,7 @@ export const serverDb = {
     if (idx === -1) return false;
     const removed = globalStore.__eml_tasks!.splice(idx, 1)[0];
     serverDb.addAuditLog("TASK_ARCHIVED", `Task '${removed.title}' archived`);
+    persistToDisk();
     return true;
   },
 
@@ -131,6 +188,7 @@ export const serverDb = {
     if (action === "archive" || action === "delete") {
       globalStore.__eml_tasks = globalStore.__eml_tasks!.filter(t => !idSet.has(t.id));
       serverDb.addAuditLog("BULK_ARCHIVE", `Archived ${taskIds.length} tasks`);
+      persistToDisk();
       return true;
     }
 
@@ -149,6 +207,7 @@ export const serverDb = {
     });
 
     serverDb.addAuditLog("BULK_ACTION", `Executed ${action} on ${taskIds.length} tasks`);
+    persistToDisk();
     return true;
   },
 
@@ -165,6 +224,7 @@ export const serverDb = {
     task.checklists.push(item);
     task.updatedAt = new Date().toISOString();
     serverDb.addAuditLog("CHECKLIST_ADDED", `Added step '${text}' to task '${task.title}'`);
+    persistToDisk();
     return item;
   },
 
@@ -175,6 +235,7 @@ export const serverDb = {
     if (!item) return null;
     item.done = !item.done;
     task.updatedAt = new Date().toISOString();
+    persistToDisk();
     return item;
   },
 
@@ -185,6 +246,7 @@ export const serverDb = {
     if (idx === -1) return false;
     task.checklists.splice(idx, 1);
     task.updatedAt = new Date().toISOString();
+    persistToDisk();
     return true;
   },
 
@@ -202,6 +264,7 @@ export const serverDb = {
     task.comments.push(comment);
     task.updatedAt = new Date().toISOString();
     serverDb.addAuditLog("COMMENT_ADDED", `Comment added to task '${task.title}'`);
+    persistToDisk();
     return comment;
   },
 
@@ -220,6 +283,7 @@ export const serverDb = {
     task.attachments.unshift(item);
     task.updatedAt = new Date().toISOString();
     serverDb.addAuditLog("ATTACHMENT_ADDED", `File '${att.name}' attached to task '${task.title}'`);
+    persistToDisk();
     return item;
   },
 
@@ -230,6 +294,7 @@ export const serverDb = {
     if (idx === -1) return false;
     task.attachments.splice(idx, 1);
     task.updatedAt = new Date().toISOString();
+    persistToDisk();
     return true;
   },
 
@@ -245,63 +310,72 @@ export const serverDb = {
     };
     globalStore.__eml_categories!.push(item);
     serverDb.addAuditLog("CATEGORY_CREATED", `Category '${item.name}' created`);
+    persistToDisk();
     return item;
   },
   updateCategory: (id: string, updates: Partial<Lookup>): Lookup | null => {
     const idx = globalStore.__eml_categories!.findIndex(c => c.id === id);
     if (idx === -1) return null;
     globalStore.__eml_categories![idx] = { ...globalStore.__eml_categories![idx], ...updates };
+    serverDb.addAuditLog("CATEGORY_UPDATED", `Category '${globalStore.__eml_categories![idx].name}' updated`);
+    persistToDisk();
     return globalStore.__eml_categories![idx];
   },
   deleteCategory: (id: string): boolean => {
     const idx = globalStore.__eml_categories!.findIndex(c => c.id === id);
     if (idx === -1) return false;
-    globalStore.__eml_categories!.splice(idx, 1);
+    const removed = globalStore.__eml_categories!.splice(idx, 1)[0];
+    serverDb.addAuditLog("CATEGORY_DELETED", `Category '${removed.name}' deleted`);
+    persistToDisk();
     return true;
   },
-  reorderCategories: (categories: { id: string; sortOrder?: number }[]): boolean => {
-    if (!categories || categories.length === 0) return false;
-    const catMap = new Map(globalStore.__eml_categories!.map(c => [c.id, c]));
+  reorderCategories: (categoryIds: string[]): Lookup[] => {
+    const map = new Map(globalStore.__eml_categories!.map(c => [c.id, c]));
     const reordered: Lookup[] = [];
-    categories.forEach((item, idx) => {
-      const existing = catMap.get(item.id) || globalStore.__eml_categories!.find(c => c.name === item.id);
-      if (existing) {
-        existing.sortOrder = item.sortOrder ?? (idx + 1);
-        reordered.push(existing);
-        catMap.delete(existing.id);
+    categoryIds.forEach((id, index) => {
+      const cat = map.get(id);
+      if (cat) {
+        cat.sortOrder = index + 1;
+        reordered.push(cat);
+        map.delete(id);
       }
     });
-    catMap.forEach(rem => reordered.push(rem));
+    // Add any remaining
+    map.forEach(cat => reordered.push(cat));
     globalStore.__eml_categories = reordered;
-    serverDb.addAuditLog("CATEGORIES_REORDERED", `Reordered ${categories.length} categories`);
-    return true;
+    serverDb.addAuditLog("CATEGORIES_REORDERED", `Reordered ${reordered.length} categories`);
+    persistToDisk();
+    return reordered;
   },
 
   // Statuses CRUD (PDF Page 6)
   getStatuses: () => globalStore.__eml_statuses!,
-  createStatus: (st: Partial<Lookup>): Lookup => {
+  createStatus: (status: Partial<Lookup>): Lookup => {
     const item: Lookup = {
-      id: "st" + Date.now(),
-      code: st.code || (st.name || "STATUS").toUpperCase().replace(/\s+/g, "_"),
-      name: st.name || "New Status",
-      description: st.description || "",
-      color: st.color || "#64748B",
+      id: "st-" + Date.now(),
+      code: status.code || (status.name || "status").toUpperCase().replace(/\s+/g, "_"),
+      name: status.name || "New Status",
+      color: status.color || "#64748B",
       sortOrder: (globalStore.__eml_statuses!.length + 1),
     };
     globalStore.__eml_statuses!.push(item);
     serverDb.addAuditLog("STATUS_CREATED", `Status '${item.name}' created`);
+    persistToDisk();
     return item;
   },
   updateStatus: (id: string, updates: Partial<Lookup>): Lookup | null => {
     const idx = globalStore.__eml_statuses!.findIndex(s => s.id === id);
     if (idx === -1) return null;
     globalStore.__eml_statuses![idx] = { ...globalStore.__eml_statuses![idx], ...updates };
+    serverDb.addAuditLog("STATUS_UPDATED", `Status '${globalStore.__eml_statuses![idx].name}' updated`);
+    persistToDisk();
     return globalStore.__eml_statuses![idx];
   },
   deleteStatus: (id: string): boolean => {
     const idx = globalStore.__eml_statuses!.findIndex(s => s.id === id);
     if (idx === -1) return false;
     globalStore.__eml_statuses!.splice(idx, 1);
+    persistToDisk();
     return true;
   },
 
@@ -310,6 +384,7 @@ export const serverDb = {
   updateSettings: (updates: Partial<SystemSettings>): SystemSettings => {
     globalStore.__eml_settings = { ...globalStore.__eml_settings!, ...updates };
     serverDb.addAuditLog("SETTINGS_UPDATED", "System settings updated");
+    persistToDisk();
     return globalStore.__eml_settings!;
   },
 
@@ -331,6 +406,7 @@ export const serverDb = {
     };
     globalStore.__eml_users!.push(item);
     serverDb.addAuditLog("USER_INVITED", `Team member '${item.name}' (${item.role}) added`);
+    persistToDisk();
     return item;
   },
   updateUserRole: (id: string, role: UserAccount["role"]): UserAccount | null => {
@@ -338,6 +414,7 @@ export const serverDb = {
     if (!u) return null;
     u.role = role;
     serverDb.addAuditLog("ROLE_UPDATED", `${u.name} role updated to ${role}`);
+    persistToDisk();
     return u;
   },
   getRoles: () => [
@@ -392,12 +469,14 @@ export const serverDb = {
       required: cf.required || false,
     };
     globalStore.__eml_custom_fields!.push(item);
+    persistToDisk();
     return item;
   },
   deleteCustomField: (id: string): boolean => {
     const idx = globalStore.__eml_custom_fields!.findIndex(c => c.id === id);
     if (idx === -1) return false;
     globalStore.__eml_custom_fields!.splice(idx, 1);
+    persistToDisk();
     return true;
   },
 
@@ -407,12 +486,14 @@ export const serverDb = {
     if (!w) return null;
     w.enabled = !w.enabled;
     serverDb.addAuditLog("WIDGET_TOGGLED", `Widget '${w.name}' is now ${w.enabled ? "visible" : "hidden"}`);
+    persistToDisk();
     return w;
   },
   updateWidget: (id: string, updates: Partial<DashboardWidgetConfig>): DashboardWidgetConfig | null => {
     const w = globalStore.__eml_widgets!.find(widget => widget.id === id);
     if (!w) return null;
     Object.assign(w, updates);
+    persistToDisk();
     return w;
   },
   resetDatabase: (): boolean => {
@@ -427,6 +508,7 @@ export const serverDb = {
     globalStore.__eml_notifications = [...DEFAULT_NOTIFICATIONS];
     globalStore.__eml_audit_logs = [...DEFAULT_AUDIT_LOGS];
     serverDb.addAuditLog("DATABASE_RESET", "Database state restored to original demo seed");
+    persistToDisk();
     return true;
   },
   getNotifications: () => globalStore.__eml_notifications!,
@@ -434,10 +516,12 @@ export const serverDb = {
     const notif = globalStore.__eml_notifications!.find(n => n.id === id);
     if (!notif) return false;
     notif.read = true;
+    persistToDisk();
     return true;
   },
   markAllNotificationsRead: (): boolean => {
     globalStore.__eml_notifications!.forEach(n => { n.read = true; });
+    persistToDisk();
     return true;
   },
 
@@ -454,6 +538,7 @@ export const serverDb = {
     };
     if (!globalStore.__eml_audit_logs) globalStore.__eml_audit_logs = [];
     globalStore.__eml_audit_logs.unshift(log);
+    persistToDisk();
   },
 
   getSummary: (): DashboardSummary => calculateSummary(globalStore.__eml_tasks!),

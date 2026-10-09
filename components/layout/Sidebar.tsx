@@ -151,7 +151,7 @@ export function Sidebar({
               title="Show only tasks due today"
             >
               <span className="nav-icon"><Clock3 size={17} /></span>
-              <span className="nav-title">Today's Focus</span>
+              <span className="nav-title">Today&apos;s Focus</span>
               <span className="nav-badge">{counts.today}</span>
             </Link>
 

@@ -67,6 +67,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     isBackendOffline = false;
     return await response.json();
   } catch (err) {
+    // If external backend at http://localhost:8080 fails, attempt local Next.js /api/v1 route
+    if (API_BASE.startsWith("http") && !path.startsWith("http")) {
+      try {
+        const localUrl = `/api/v1${path}`;
+        const localRes = await fetch(localUrl, {
+          ...init,
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders,
+            ...(init?.headers ?? {}),
+          },
+          cache: "no-store",
+        });
+        if (localRes.ok) {
+          return await localRes.json();
+        }
+      } catch (_) {}
+    }
+
     if (typeof window !== "undefined") {
       isBackendOffline = true;
       lastOfflineCheck = Date.now();

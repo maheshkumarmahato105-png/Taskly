@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev",
+    "dev:all": "node scripts/start-all.js",
+    "backend": "cd backend && go run ./cmd/api",
+    "build:backend": "cd backend && go build -o api.exe ./cmd/api",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

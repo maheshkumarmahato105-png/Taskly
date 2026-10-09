@@ -112,7 +112,7 @@ export function FilterBar({
             <option value="" disabled>Saved Views</option>
             <option value="overdue-work">⚡ Overdue Work</option>
             <option value="high-ops">🔥 High Priority Ops</option>
-            <option value="today-focus">🎯 Today's Focus</option>
+            <option value="today-focus">🎯 Today&apos;s Focus</option>
           </select>
         </div>
       </div>

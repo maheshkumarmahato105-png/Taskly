@@ -65,7 +65,7 @@ export function TaskModal({
       setReferenceNumber(`EML-${Math.floor(100 + Math.random() * 900)}`);
       setFollowUpDate("");
     }
-  }, [isOpen, editingTask]);
+  }, [isOpen, editingTask, categories]);
 
   if (!isOpen) return null;
 
